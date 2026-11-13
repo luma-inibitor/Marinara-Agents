@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.4.22-luma.4 — 2026-11-12
+
+- Fork build of Slurp 0.4.21 with these fixes: Collab and couple posts draw the partner into the picture at every level. Stage appearance loses its clothes too, so nude pictures no longer come out dressed. A post whose writer names no saved look keeps the writer's own outfit. An outfit of "completely naked" or "fully nude" counts as no outfit. Half of locked posts keep their scene, and the spicy kind no longer repeats back to back. The overused-opener check reads every recent post, locked ones included. Two posts written close together no longer get the same details. A card's likes and hobbies reach every post, and section headings are no longer read as facts. Quiet days are one line in the recent-activity list, so real activity fills it. The card's core in every brief is about four times longer. Creators choose each automatic post's idea from their whole card, and a new setting sets the locked share. Pictures send references only for the people in them.
+
 ## 0.4.21 — 2026-11-12
 
 - Added: Backstage > World clock. Slurp now has its own date. You can skip it forward by whole days, and you can go back only by restoring a checkpoint. A skip changes the date and nothing else: no posts, messages, events, stipends, income or cleanups are made for the days you skipped, and queued replies keep the wait they had left. Slurp saves a checkpoint before every skip and keeps the newest five by default. Manual checkpoints are never deleted. A restore saves a safety checkpoint first, brings back the data, settings, pictures and world date, keeps Slurp paused if it was paused, and puts the old state back if anything fails.

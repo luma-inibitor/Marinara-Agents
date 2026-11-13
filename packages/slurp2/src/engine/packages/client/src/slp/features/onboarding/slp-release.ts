@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.4.21";
+export const SLURP2_VERSION = "0.4.22-luma.4";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -14,6 +14,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.4.22-luma.4",
+    date: "2026-11-12",
+    notes: [
+      "Fork build of Slurp 0.4.21 with these fixes: Collab and couple posts draw the partner into the picture at every level. Stage appearance loses its clothes too, so nude pictures no longer come out dressed. A post whose writer names no saved look keeps the writer's own outfit. An outfit of \"completely naked\" or \"fully nude\" counts as no outfit. Half of locked posts keep their scene, and the spicy kind no longer repeats back to back. The overused-opener check reads every recent post, locked ones included. Two posts written close together no longer get the same details. A card's likes and hobbies reach every post, and section headings are no longer read as facts. Quiet days are one line in the recent-activity list, so real activity fills it. The card's core in every brief is about four times longer. Creators choose each automatic post's idea from their whole card, and a new setting sets the locked share. Pictures send references only for the people in them.",
+    ],
+  },
   {
     version: "0.4.21",
     date: "2026-11-12",
