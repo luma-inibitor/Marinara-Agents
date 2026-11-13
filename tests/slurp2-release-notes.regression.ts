@@ -14,7 +14,9 @@ const changelog = readFileSync(join(root, "CHANGELOG.md"), "utf8");
 // The splash is a curated subset of the changelog: pre-release and some old entries are not shown.
 // Check what must hold for any version: same order as the changelog, newest matches the package,
 // and nothing on the current minor line is hidden.
-const changelogVersions = [...changelog.matchAll(/^## (\d+\.\d+\.\d+) — /gmu)].map(([, version]) => version!);
+const changelogVersions = [...changelog.matchAll(/^## (\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?) — /gmu)].map(
+  ([, version]) => version!,
+);
 const splashVersions = SLURP2_RELEASES.map((release) => release.version);
 const currentLine = manifest.version.split(".").slice(0, 2).join(".") + ".";
 
