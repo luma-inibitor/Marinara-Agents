@@ -13,7 +13,7 @@ import { slurpSpicyCollabNames } from "../../data/creators/slp-spice-storage.js"
 import { listSlurpFeedSpice } from "../../data/feed/slp-feed-subjects-storage.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
-import { slurpSpiceAngle } from "../../modules/creators/slp-spice.js";
+import { slurpLockedKeepsScene, slurpSpiceAngle } from "../../modules/creators/slp-spice.js";
 import { slurpPostSexualLevel, type SlurpExplicitLevel } from "../../modules/feed/slp-post-guidance.js";
 import type { SlurpPostVariation } from "../../modules/feed/slp-post-variation.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
@@ -128,8 +128,12 @@ export async function planSlurpPostSpice(
         }))
       : { collabs: [] };
   const spicy = tie?.kind !== "sponsor" && tie?.kind !== "rival" && !SLURP_UNSPICY_COUPLE.has(tie?.moment ?? "");
+  // About half of a Creator's own locked posts keep the scene their angle drew. A drop still delivers
+  // what its tease hinted at, and a collab or couple post is still about the partner.
+  const ownPost = tie?.kind !== "collab" && tie?.kind !== "couple";
+  const keepsScene = locked && ownPost && !input.teasedKind && slurpLockedKeepsScene(input.account.id, input.sequence);
   const angle =
-    spiceRead && !input.directed && spicy
+    spiceRead && !input.directed && spicy && !keepsScene
       ? slurpSpiceAngle({
           level: postLevel,
           ceiling: input.dialLevel,
