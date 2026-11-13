@@ -269,6 +269,7 @@ export async function generateNoodlePostImage(baseInput: {
           requestedNames: [input.account.displayName, ...(persona && personaMentioned ? [persona.name] : [])],
           promptText: [input.account.displayName, input.postContent, input.draftPrompt].join("\n"),
           maxReferences: 6,
+          matchLibraryInPrompt: true,
         });
         if (input.settings.imageGenerationIncludeDescriptions && referenceResolution.appearanceBlock) {
           characterDescription = referenceResolution.appearanceBlock;
