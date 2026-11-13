@@ -1,0 +1,7 @@
+# Patch branches applied on top of `staging`, in order, to build `luma/staging`.
+# One branch per line, then `#` and one sentence for the release notes of the fork build.
+# patch/fork-tooling is applied after these by rebuild.sh; do not list it.
+patch/slurp-collab-in-picture # A collab's joint post or a couple's date draws the partner into the picture at every level.
+patch/slurp-appearance-clothes # Clothes are removed from Stage appearance too, so nude pictures no longer come out dressed.
+patch/slurp-writer-outfit # A post whose writer names no saved look keeps the writer's own outfit.
+patch/slurp-bare-outfit # An outfit of "completely naked" or "fully nude" counts as no outfit.
