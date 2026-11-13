@@ -4,6 +4,7 @@ import { deleteSlurpCreatorPlanningRows } from "../continuity/slp-continuity-sto
 import { SlpAccount, SlpAccountKind } from "../../../../../shared/src/slp/slp-social.types.js";
 import { slurpProjectsKey } from "../../modules/projects/slp-project.js";
 import { slurpArcAutoKey, slurpArcConfigKey } from "../../modules/projects/slp-arc-library.js";
+import { slurpPostSequenceKey } from "../../modules/feed/slp-post-sequence.js";
 import { unlinkCreatorMedia } from "../../base/media/slp-media.js";
 import {
   slpAccounts,
@@ -167,6 +168,7 @@ export function createCreatorsStorage2(context: SlurpStorageContext) {
             await settings.remove(slurpProjectsKey(accountId));
             await settings.remove(slurpArcAutoKey(accountId));
             await settings.remove(slurpArcConfigKey(accountId));
+            await settings.remove(slurpPostSequenceKey(accountId));
           }
           for (const personaId of personaIds) await settings.remove(slurpViewerSettingsKey(personaId));
           await settings.remove(SLURP_SETTINGS_KEY);

@@ -69,7 +69,7 @@ export async function previewSlurpPromptBlocks(
 
   // The next post this Creator would make, so the preview shows the rotation they are actually on
   // rather than a fixed sample that never matches what they publish.
-  const sequence = await slurp.countNoodlerPostsByAccount(account.id);
+  const sequence = await slurp.peekNoodlerPostSequence(account.id);
   const variation = slurpPostVariation(account.id, sequence, settings.storyRate);
   const strategy = slurpCreatorStrategy(account.id, account.settings.strategy);
   const production = strategy.production;
