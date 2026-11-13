@@ -278,7 +278,10 @@ assert.doesNotMatch(bare, /Your last posts/u);
 // ── Generation wiring ───────────────────────────────────────────────────────
 const generation = read("services/slurp/slurp-generation.service.ts");
 // One sequence for both rotations, or the project and the variation drift apart.
-assert.match(generation, /const sequence = await noodle\.countNoodlerPostsByAccount\(account\.id\)/u);
+assert.match(
+  generation,
+  /const sequence = await noodle\.nextNoodlerPostSequence\(account\.id, \{ claim: !input\.previewOnly \}\)/u,
+);
 assert.match(
   generation,
   /slurpPostVariation\(account\.id, sequence, settings\.storyImagesEnabled \? settings\.storyRate : "off"\)/u,

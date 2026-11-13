@@ -80,6 +80,8 @@ listNoodlerPostsByAccounts
 listNoodlerPostPage
 getNoodlerViewerSignal
 countNoodlerPostsByAccount
+peekNoodlerPostSequence
+nextNoodlerPostSequence
 getNoodlerPostById
 getNoodlerPostByWizardExecution
 createNoodlerPost

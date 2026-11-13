@@ -190,7 +190,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = slurpWorldNow()
         ? { skip: true as const, reason: planned.skipReason ?? ("quiet_day" as const) }
         : planned
           ? { skip: false as const }
-          : slurpPlanSlot(selectedAccount.id, await noodle.countNoodlerPostsByAccount(selectedAccount.id), {
+          : slurpPlanSlot(selectedAccount.id, await noodle.peekNoodlerPostSequence(selectedAccount.id), {
               skippedLast: await slurpSkippedLastSlot(db, selectedAccount.id),
               skipRate: slurpCreatorStrategy(selectedAccount.id, selectedAccount.settings.strategy).skipRate,
             });
@@ -198,7 +198,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = slurpWorldNow()
       await planSlurpOpportunity(db, {
         creatorAccountId: selectedAccount.id,
         slotId: selectedSlotId,
-        sequence: await noodle.countNoodlerPostsByAccount(selectedAccount.id),
+        sequence: await noodle.peekNoodlerPostSequence(selectedAccount.id),
         workflow: "skip",
         skipReason: decision.reason,
         at,
