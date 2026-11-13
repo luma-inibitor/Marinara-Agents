@@ -107,6 +107,11 @@ export async function resolveSlurpCreatorFlavour(
     steering?: SlpCreatorSteering | null;
     /** Their own lines, newest first; their recent public captions when absent. */
     ownLines?: readonly string[];
+    /**
+     * Their recent posts, newest first, already loaded: public ones give the voice, all of them the
+     * opener check. Read here when neither this nor `ownLines` is given.
+     */
+    ownPosts?: readonly { access: string; content: string }[];
     /** Already loaded by the caller (a post); read here when absent. */
     spice?: SlurpCreatorSpice | null;
     /**
@@ -137,11 +142,12 @@ export async function resolveSlurpCreatorFlavour(
         ? await readSlurpAgentMemoryLines(db, input.source)
         : [];
     const card = await readFlavourCard(db, input.source, input.disclosureMode);
-    const ownLines =
-      input.ownLines ??
-      (await createSlurpStorage(db).listNoodlerPostsByAccount(input.account.id, 8))
-        .filter((post) => post.access !== "locked")
-        .map((post) => post.content);
+    const recent =
+      input.ownPosts ??
+      (input.ownLines ? [] : await createSlurpStorage(db).listNoodlerPostsByAccount(input.account.id, 8));
+    const ownLines = input.ownLines ?? recent.filter((post) => post.access !== "locked").map((post) => post.content);
+    // The opener check reads every recent post. Only the voice sample keeps to public lines.
+    const signatureLines = input.ownLines ? undefined : recent.map((post) => post.content);
     const anchors = await readAnchors(db, input.account.id);
     const spiceLines = await flavourSpiceLines(db, input, card?.card ?? {}, anchors).catch((error: unknown) => {
       logger.warn(error, "[slurp] Could not read the Creator's spice; the brief goes without it");
@@ -154,6 +160,7 @@ export async function resolveSlurpCreatorFlavour(
         card: card?.card ?? {},
         anchors,
         ownLines,
+        signatureLines,
         steering: input.steering ?? (await readSlurpCreatorSteering(db, input.account.id)),
         lately: agents,
         spice: spiceLines,
