@@ -13,11 +13,11 @@ import { readFile, writeFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const repoRoot = process.cwd();
-const target = (process.argv[2] ?? "https://raw.githubusercontent.com/luma-inibitor/Marinara-Agents/luma/staging").replace(
-  /\/+$/u,
-  "",
-);
-const upstream = /^https:\/\/raw\.githubusercontent\.com\/Pasta-Devs\/Marinara-Agents\/(?:main|staging)\/(?=artifacts\/|artwork\/)/u;
+const target = (
+  process.argv[2] ?? "https://raw.githubusercontent.com/luma-inibitor/Marinara-Agents/luma/staging"
+).replace(/\/+$/u, "");
+const upstream =
+  /^https:\/\/raw\.githubusercontent\.com\/Pasta-Devs\/Marinara-Agents\/(?:main|staging)\/(?=artifacts\/|artwork\/)/u;
 
 async function catalogs(dir) {
   const out = [];
@@ -32,7 +32,8 @@ async function catalogs(dir) {
 function retarget(value) {
   if (typeof value === "string") return value.replace(upstream, `${target}/`);
   if (Array.isArray(value)) return value.map(retarget);
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, retarget(v)]));
+  if (value && typeof value === "object")
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, retarget(v)]));
   return value;
 }
 
