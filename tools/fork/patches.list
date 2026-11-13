@@ -5,3 +5,9 @@ patch/slurp-collab-in-picture # A collab's joint post or a couple's date draws t
 patch/slurp-appearance-clothes # Clothes are removed from Stage appearance too, so nude pictures no longer come out dressed.
 patch/slurp-writer-outfit # A post whose writer names no saved look keeps the writer's own outfit.
 patch/slurp-bare-outfit # An outfit of "completely naked" or "fully nude" counts as no outfit.
+patch/slurp-locked-scene # About half of a Creator's own locked posts keep their scene, and the spicy kind no longer repeats back to back.
+patch/slurp-opener-all-posts # The overused-opener check reads every recent post, locked ones included.
+patch/slurp-unique-sequence # Every post generation draws on its own sequence, so two posts no longer get the same details.
+patch/slurp-card-interests # A card's likes and hobbies reach every post, and section headings are no longer read as facts.
+patch/slurp-quiet-days # Quiet days are one line in the recent-activity list, so real activity fills it.
+patch/slurp-card-core # The card's core in every brief is about four times longer.
