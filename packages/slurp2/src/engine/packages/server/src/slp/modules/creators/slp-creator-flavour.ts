@@ -53,6 +53,11 @@ export type SlurpFlavourSource = {
   anchors?: SlurpCanonAnchors | null;
   /** Their own past captions or chat lines, newest first. Callers leave out anything paid. */
   ownLines?: readonly string[];
+  /**
+   * Their own recent posts, paid ones included, newest first, for the overused-opener check only.
+   * Nothing from them is quoted. Absent: `ownLines`.
+   */
+  signatureLines?: readonly string[];
   steering?: SlpCreatorSteering | null;
   /** What the player's other Agents know, already in plain sentences. Optional (a setting). */
   lately?: readonly SlurpLatelyLine[];
@@ -356,7 +361,8 @@ export function compileSlurpFlavourBrief(
   const usable = halves.every((list) => list.length > 0) ? halves[sequence % 2]! : pool;
   const bits = draw(source.accountId, sequence, usable, BITS_PER_USE[options.use]);
 
-  const signature = slurpSignaturePhrase(source.ownLines ?? []);
+  // Every recent post counts: with most posts locked, the public ones alone never showed the habit.
+  const signature = slurpSignaturePhrase(source.signatureLines ?? source.ownLines ?? []);
   // A line that opens with the overused phrase would show the model the habit it is asked to drop.
   const samples = voiceSamples(source).filter(
     (line) => !avoided(line) && !(signature && line.toLocaleLowerCase().startsWith(signature.toLocaleLowerCase())),
