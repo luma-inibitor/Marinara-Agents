@@ -213,6 +213,20 @@ export function SlpDeepDetailsModal({ postId, open, onClose }: { postId: string;
                             : `${details.planner.claimCheck.revised ? "still off after revision" : "mismatch"}: ${details.planner.claimCheck.problems.join("; ")}`
                           : null,
                       ],
+                      // Character-led ideas: what the Creator chose, from what, and how the step went.
+                      [
+                        "Idea",
+                        details.planner?.ideation?.idea
+                          ? `${details.planner.ideation.idea.subject}: ${details.planner.ideation.idea.idea}`
+                          : null,
+                      ],
+                      ["Idea from", details.planner?.ideation?.idea?.sources.join(" · ") || null],
+                      [
+                        "Idea step",
+                        details.planner?.ideation
+                          ? `${details.planner.ideation.status}${details.planner.ideation.reason ? `: ${details.planner.ideation.reason}` : ""} · ${details.planner.ideation.attempts.length} model call(s) · plans: ${details.planner.ideation.plans}`
+                          : null,
+                      ],
                     ]}
                   />
                 </Section>

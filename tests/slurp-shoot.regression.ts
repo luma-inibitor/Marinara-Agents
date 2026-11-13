@@ -61,9 +61,10 @@ assert.doesNotMatch(
 const generation = slurp2Source(
   "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-generation-service.ts",
 );
+// `let`: a character-led idea may choose another allowed camera (`slp-post-ideation-service.ts`).
 assert.match(
   generation,
-  /const shootCamera = slurpScreenFreeCamera\(shoot\?\.cameraSource, screens\);\s+const camera = shootCamera \?\? cameraSource/u,
+  /const shootCamera = slurpScreenFreeCamera\(shoot\?\.cameraSource, screens\);\s+let camera = shootCamera \?\? cameraSource/u,
 );
 // Continuity bookkeeping must never cost a post.
 assert.match(generation, /Could not open a shoot session/u);

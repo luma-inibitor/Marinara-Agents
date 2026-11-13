@@ -490,7 +490,9 @@ assert.match(
   generation,
   /\.\.\.slurpPurposeMetadata\(purpose, protectedGenerated\.content, \{ storyline: Boolean\(project\) \}\)/u,
 );
-assert.match(generation, /teasedKind: purpose\.spiceKind/u);
+// The purpose reaches the spice planner through the idea step, which wraps it.
+assert.match(generation, /idea: \{ input, camera, purpose,/u);
+assert.match(server("features/feed/slp-post-ideation-service.ts"), /teasedKind: context\.purpose\.spiceKind/u);
 assert.match(
   server("data/feed/reserve/slp-reserve-storage-2.ts"),
   /await linkSlurpPurposePost\(db, \{/u,
