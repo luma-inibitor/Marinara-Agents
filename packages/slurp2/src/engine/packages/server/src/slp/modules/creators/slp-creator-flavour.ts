@@ -92,6 +92,7 @@ const SAMPLE_MAX = 170;
 const SAMPLE_SKIP_NEWEST = 2;
 
 const KIND_WEIGHT: Record<string, number> = {
+  interests: 3,
   voice: 3,
   never: 2,
   habit: 2,
@@ -140,6 +141,7 @@ function cardSentences(value: string | undefined, name: string): string[] {
       // Eight Latin letters are barely a word; four kana or hanzi are a sentence.
       .filter((sentence) => sentence.length >= (CJK.test(sentence) ? 3 : 8))
       .filter((sentence) => !/\{\{\s*user\s*\}\}|<\s*start\s*>/iu.test(sentence))
+      .filter((sentence) => !headerOnly(sentence))
       .map((sentence) => {
         // A body sentence stays whole: furry and scalie cards put the whole anatomy in one comma list,
         // and the cap cut a dragon's wings, tail and claws out of every prompt.
@@ -147,6 +149,24 @@ function cardSentences(value: string | undefined, name: string): string[] {
         return sentence.length > max ? `${sentence.slice(0, max - 1).trim()}…` : sentence;
       })
   );
+}
+
+/**
+ * A card's section heading with nothing after it ("> SEXUALITY", "## Identity", "Appearance:",
+ * "[Backstory]"). It names a topic and says nothing true about the Creator.
+ */
+function headerOnly(sentence: string): boolean {
+  const marked = /^\s*(?:>|#)/u.test(sentence);
+  const bare = sentence.replace(/^[\s>#*_~\-•]+|[\s*_~]+$/gu, "");
+  if (!bare) return true;
+  // A label with a colon and nothing after it.
+  if (/^[^.!?:]{1,48}:$/u.test(bare)) return true;
+  // A bracketed section name.
+  if (/^\[[\p{L}\s&/'-]{1,40}\]$/u.test(bare)) return true;
+  // A short line in capitals, or a short heading line, with no sentence end.
+  if (/[.!?…。！？]$/u.test(bare)) return false;
+  if (bare.length <= 40 && /\p{L}/u.test(bare) && bare === bare.toLocaleUpperCase() && !CJK.test(bare)) return true;
+  return marked && bare.split(/\s+/u).length <= 4;
 }
 
 function takeUpTo(sentences: string[], max: number): { taken: string[]; rest: string[] } {
@@ -167,14 +187,20 @@ const VOICE =
 const HABIT =
   /\b(always|often|usually|every (morning|day|night|week)|habit|tends? to|loves?|obsessed|collects?|can'?t help|ständig|immer|liebt)\b/iu;
 
+/** What they like and do for fun, as a card writes it: "Likes: …", "Hobbies - …", "His passions are …". */
+const INTERESTS =
+  /^[\s>*#\-•]*(?:likes?|hobb(?:y|ies)|interests?|loves?|passions?|pastimes?|enjoys?|favou?rites?(?: things)?|fond of|when alone|in (?:his|her|their) (?:free|spare) time)\b[^.:!?]{0,24}[:\-–—]|\b(?:hobb(?:y|ies)|interests|passions|pastimes) (?:are|is|include|includes)\b|\bin (?:his|her|their) (?:free|spare) time\b/iu;
+
 function cardKind(sentence: string): string {
-  return VOICE.test(sentence)
-    ? "voice"
-    : SLURP_NEVER_PATTERN.test(sentence)
-      ? "never"
-      : HABIT.test(sentence)
-        ? "habit"
-        : "life";
+  return INTERESTS.test(sentence)
+    ? "interests"
+    : VOICE.test(sentence)
+      ? "voice"
+      : SLURP_NEVER_PATTERN.test(sentence)
+        ? "never"
+        : HABIT.test(sentence)
+          ? "habit"
+          : "life";
 }
 
 function anchorBits(anchors: SlurpCanonAnchors | null | undefined): Bit[] {
@@ -269,9 +295,9 @@ function half(accountId: string, key: string): number {
 /** Draw up to `count` details, never two of one kind while another kind is still free. */
 const nameWords = (value: string) => value.match(/\p{Lu}\p{L}{2,}/gu) ?? [];
 
-function draw(accountId: string, sequence: number, bits: Bit[], count: number): Bit[] {
-  const left = [...bits];
-  const chosen: Bit[] = [];
+function draw(accountId: string, sequence: number, bits: Bit[], count: number, preset: Bit[] = []): Bit[] {
+  const left = bits.filter((bit) => !preset.includes(bit));
+  const chosen: Bit[] = [...preset];
   while (chosen.length < count && left.length > 0) {
     const used = new Set(chosen.map((bit) => bit.kind));
     // Two details about the same named person or place say one thing twice.
@@ -359,7 +385,27 @@ export function compileSlurpFlavourBrief(
   // Two halves that alternate, so consecutive requests never share a detail. Tiny pools share.
   const halves = [0, 1].map((side) => pool.filter((bit) => half(source.accountId, bit.key) === side));
   const usable = halves.every((list) => list.length > 0) ? halves[sequence % 2]! : pool;
-  const bits = draw(source.accountId, sequence, usable, BITS_PER_USE[options.use]);
+  // A post or Story always carries one of their interests when the card has any. The alternating
+  // half is preferred, so consecutive posts differ, but never at the cost of having none.
+  const interests = pool.filter((bit) => bit.kind === "interests");
+  const interestSide = interests.filter((bit) => usable.includes(bit));
+  const interestFrom = interestSide.length ? interestSide : interests;
+  const interest =
+    (options.use === "post" || options.use === "story") && interestFrom.length
+      ? slurpWeightedPick(
+          "flavourInterest",
+          source.accountId,
+          sequence,
+          interestFrom.map((value) => ({ value, weight: 1 })),
+        )
+      : null;
+  const bits = draw(
+    source.accountId,
+    sequence,
+    interest && !usable.includes(interest) ? [...usable, interest] : usable,
+    BITS_PER_USE[options.use],
+    interest ? [interest] : [],
+  );
 
   // Every recent post counts: with most posts locked, the public ones alone never showed the habit.
   const signature = slurpSignaturePhrase(source.signatureLines ?? source.ownLines ?? []);
