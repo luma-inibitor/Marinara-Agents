@@ -1,3 +1,4 @@
+/* global process, console */
 // Point every artifact, artwork and language-pack URL in the generated catalogs at this fork.
 //
 // The Engine rewrites URLs to Pasta-Devs/<branch> only for the official catalog. With
