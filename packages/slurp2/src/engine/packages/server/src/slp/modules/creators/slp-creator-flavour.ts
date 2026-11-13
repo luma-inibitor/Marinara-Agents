@@ -76,8 +76,13 @@ type Bit = { key: string; kind: string; text: string; value?: string };
 
 /** Details per request, by use. A hand-over note is two sentences; a post can carry more colour. */
 const BITS_PER_USE: Record<SlurpFlavourUse, number> = { post: 4, story: 3, dm: 3, comment: 2, delivery: 2 };
-const CORE_DESCRIPTION_MAX = 360;
-const CORE_PERSONALITY_MAX = 240;
+/**
+ * The core: whole sentences from the start of the description and the personality, shown in every
+ * brief. Change these two numbers to give the card more or less room. At 360 and 240 the core was
+ * a name and an occupation, and the rest of the card came in only as four rotating details.
+ */
+export const CORE_DESCRIPTION_MAX = 1500;
+export const CORE_PERSONALITY_MAX = 600;
 const SENTENCE_MAX = 220;
 /** A body sentence is kept whole up to this; past it the card is a wall of text, not a sentence. */
 const BODY_SENTENCE_MAX = 900;
