@@ -55,6 +55,8 @@ case "$previous" in
 esac
 version="$fork_base-luma.${FORK_BUILD:-$build}"
 node "$tools/stamp-version.mjs" "$version" "$upstream_version" "$(printf '%s' "$notes" | paste -sd' ' -)"
+"$tools/in-node.sh" node_modules/.bin/prettier --experimental-cli --log-level warn --write \
+  packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-release.ts
 
 "$tools/in-node.sh" node scripts/build-feature-packages.mjs slurp2
 # Light, and needs unzip, which the container image lacks: run on the host (Node 22 is enough).
