@@ -1,3 +1,4 @@
+/* global process, console */
 // Set the slurp2 version for a fork build and add its release note to the CHANGELOG and the splash.
 //
 //   node tools/fork/stamp-version.mjs <fork version> <upstream version> <note>
