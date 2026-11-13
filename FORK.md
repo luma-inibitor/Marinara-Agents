@@ -11,7 +11,7 @@ the official one.
 | -------------------- | ---------------------------------------------------------------------------------------- |
 | `staging`            | Pristine mirror of `upstream/staging`. Never commit here.                                |
 | `patch/*`            | One branch per fix, based on `staging`, each with its own regression test in `tests/`.   |
-| `patch/fork-tooling` | This file and `tools/fork/`. Applied after the patches.                                  |
+| `patch/fork-tooling` | This file, `tools/fork/`, and a release-notes test that accepts the fork version. Applied after the patches. |
 | `luma/staging`       | `staging` + patches + fork tooling + one generated slurp2 build commit. Rebuilt, never edited. |
 
 `patch/*` branches change source and tests only. Generated files (`packages/slurp2/client.js`,
@@ -55,8 +55,8 @@ tools/fork/push-sync.sh --dry-run
 tools/fork/push-sync.sh
 ```
 
-`rebuild.sh` cherry-picks the patches onto `staging`, sets the slurp2 version, adds a CHANGELOG entry,
-builds slurp2, validates the catalog, retargets the catalog URLs and commits. It pushes nothing.
+`rebuild.sh` cherry-picks the patches onto `staging`, sets the slurp2 version, adds a CHANGELOG and
+splash entry (`stamp-version.mjs`), builds slurp2, validates the catalog, retargets the catalog URLs and commits. It pushes nothing.
 `push-sync.sh` pushes `staging`, the patches, `patch/fork-tooling` and `luma/staging` to `origin` and to
 every remote in `git config fork.mirror`, with `--force-with-lease --force-if-includes`.
 
