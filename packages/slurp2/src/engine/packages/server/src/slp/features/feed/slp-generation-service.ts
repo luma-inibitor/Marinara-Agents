@@ -360,7 +360,7 @@ export async function generateCreatorPost(
     use: storyVariation ? "story" : "post",
     sequence,
     steering,
-    ownLines: recentPosts.filter((post) => post.access !== "locked").map((post) => post.content),
+    ownPosts: recentPosts,
     spice: spiced.spice,
     shaped: (value) => (flavourShaped = value),
   });
