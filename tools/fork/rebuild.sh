@@ -9,11 +9,12 @@
 # upstream version). MARINARA_ENGINE_ROOT picks the Engine checkout the build uses (default ../Marinara-Engine).
 set -euo pipefail
 
-# Branch switches remove tools/fork from the tree, so run from a copy.
+# Branch switches remove tools/fork from the tree, so run from a copy of patch/fork-tooling's tools,
+# whatever branch is checked out now.
 if [ -z "${FORK_REEXEC:-}" ]; then
   copy=$(mktemp -d)
-  cp -r "$(dirname "$0")" "$copy/fork"
-  FORK_REEXEC=1 exec bash "$copy/fork/rebuild.sh" "$@"
+  git archive patch/fork-tooling tools/fork | tar -x -C "$copy"
+  FORK_REEXEC=1 exec bash "$copy/tools/fork/rebuild.sh" "$@"
 fi
 tools=$(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"

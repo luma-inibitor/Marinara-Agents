@@ -8,7 +8,8 @@ import { readFile, writeFile } from "node:fs/promises";
 const [version, upstream, note] = process.argv.slice(2);
 if (!version || !upstream || !note)
   throw new Error("usage: stamp-version.mjs <fork version> <upstream version> <note>");
-const date = new Date().toISOString().slice(0, 10);
+// The local date, as the upstream notes are written.
+const date = new Date().toLocaleDateString("sv-SE");
 const text = `Fork build of Slurp ${upstream} with these fixes: ${note}`;
 
 async function edit(path, change) {
@@ -26,7 +27,7 @@ await edit("packages/slurp2/src/engine/packages/client/src/slp/features/onboardi
     .replace(/SLURP2_VERSION = "[^"]+"/u, `SLURP2_VERSION = ${JSON.stringify(version)}`)
     .replace(
       /(export const SLURP2_RELEASES: Slurp2ReleaseEntry\[\] = \[\n)/u,
-      `$1  {\n    version: ${JSON.stringify(version)},\n    date: ${JSON.stringify(date)},\n    notes: [${JSON.stringify(text)}],\n  },\n`,
+      `$1  {\n    version: ${JSON.stringify(version)},\n    date: ${JSON.stringify(date)},\n    notes: [\n      ${JSON.stringify(text)},\n    ],\n  },\n`,
     ),
 );
 await edit("packages/slurp2/CHANGELOG.md", (source) =>
