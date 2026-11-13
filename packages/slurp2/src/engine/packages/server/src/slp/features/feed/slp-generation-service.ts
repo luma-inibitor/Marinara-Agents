@@ -148,8 +148,8 @@ export async function generateCreatorPost(
     sourceCharacterContext,
     source: linkedPublicAccount,
   });
-  // Rotating angle, skipped for directed posts; one sequence keeps project and variation in step.
-  const sequence = await noodle.countNoodlerPostsByAccount(account.id);
+  // Rotating angle, skipped for directed posts; one unique sequence keeps project and variation in step.
+  const sequence = await noodle.nextNoodlerPostSequence(account.id, { claim: !input.previewOnly });
   const story = await loadSlurpStoryState(db, account.id, at); // closet, brief lines and deck beats
   const looks = await ensureSlurpCreatorWardrobe(db, {
     accountId: account.id,

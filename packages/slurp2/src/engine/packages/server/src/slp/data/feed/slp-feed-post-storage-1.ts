@@ -25,6 +25,12 @@ import type {
 import { snapshotForAccount, mapPost, mapManagedPost, imageClaimIsAvailable } from "../host/slp-storage-mappers.js";
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
 import { slurpTrendLabelOf, slurpTrendQuoteOf } from "../../modules/discovery/slp-trends.js";
+import {
+  claimSlurpPostSequence,
+  peekSlurpPostSequence,
+  slurpPostSequenceKey,
+  type SlurpPostSequenceStore,
+} from "../../modules/feed/slp-post-sequence.js";
 
 export function createFeedPostStorage1(context: SlurpStorageContext) {
   const {
@@ -365,6 +371,29 @@ export function createFeedPostStorage1(context: SlurpStorageContext) {
     async countNoodlerPostsByAccount(accountId: string): Promise<number> {
       const rows = await db.select().from(slpPosts).where(eq(slpPosts.authorAccountId, accountId));
       return rows.length;
+    },
+    /**
+     * The sequence this Creator's next post would draw on, without handing it out. Access and slot
+     * planning read it, so they agree with the generation that claims it next.
+     */
+    async peekNoodlerPostSequence(accountId: string): Promise<number> {
+      return peekSlurpPostSequence(this.postSequenceStore(accountId));
+    },
+    /**
+     * Hands out the next sequence for one generation, so no two generations of a Creator share one.
+     * Without `claim` (a preview) it only peeks.
+     */
+    async nextNoodlerPostSequence(accountId: string, options: { claim: boolean }): Promise<number> {
+      const store = this.postSequenceStore(accountId);
+      return options.claim ? claimSlurpPostSequence(accountId, store) : peekSlurpPostSequence(store);
+    },
+    postSequenceStore(accountId: string): SlurpPostSequenceStore {
+      const key = slurpPostSequenceKey(accountId);
+      return {
+        count: () => this.countNoodlerPostsByAccount(accountId),
+        get: () => settingsStore.get(key),
+        set: (value) => settingsStore.set(key, value),
+      };
     },
     countNoodlerPostsByAccountsSince(accountIds: string[], since: string): number {
       if (accountIds.length === 0) return 0;

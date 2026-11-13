@@ -6,9 +6,9 @@ import { slurpTeaserPost } from "../../modules/feed/slp-post-variation.js";
  * to fish for subscribers. A player-chosen access never passes through here.
  */
 export async function resolveSlurpAutomaticPostAccess(
-  noodle: Pick<ReturnType<typeof createSlurpStorage>, "countNoodlerPostsByAccount" | "getSettings">,
+  noodle: Pick<ReturnType<typeof createSlurpStorage>, "peekNoodlerPostSequence" | "getSettings">,
   accountId: string,
 ): Promise<"public" | "locked"> {
-  const [sequence, settings] = await Promise.all([noodle.countNoodlerPostsByAccount(accountId), noodle.getSettings()]);
+  const [sequence, settings] = await Promise.all([noodle.peekNoodlerPostSequence(accountId), noodle.getSettings()]);
   return slurpTeaserPost(accountId, sequence, settings.teaserRate) ? "public" : "locked";
 }
