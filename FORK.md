@@ -70,6 +70,9 @@ The build needs an Engine checkout with `node_modules` (`MARINARA_ENGINE_ROOT`, 
 - A conflict stops the rebase. Resolve it on the patch branch, then run `rebuild.sh` without `--sync`.
 - Upstream may change a line a patch's test asserts on. Fix the test on the patch branch.
 - Run the slurp2 tests on `luma/staging` before pushing (below).
+- `patch/slurp-reference-scope` carries Engine fix 314a71a586 (#5865) in the vendored
+  `illustrator-references.ts`, with a `matchLibraryInPrompt` flag that keeps Noodle's old matching. Drop it
+  once upstream re-vendors that file.
 
 ## Add a patch
 
