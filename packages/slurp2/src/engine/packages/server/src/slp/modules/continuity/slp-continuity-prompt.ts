@@ -77,9 +77,20 @@ export function slurpContinuityInstruction(input: {
   threadId?: string | null;
 }): string {
   const facts = input.facts.slice(0, MAX_FACTS);
-  const events = (input.events ?? []).slice(0, MAX_EVENTS);
+  // Quiet slots are one summary line. As one line each they took most of the list, so what the
+  // Creator did was crowded out by what they did not do.
+  const skipped = (input.events ?? []).filter((event) => event.eventType === "chosen_skip");
+  const events = (input.events ?? [])
+    .filter((event) => event.eventType !== "chosen_skip")
+    .slice(0, MAX_EVENTS - (skipped.length > 0 ? 1 : 0));
+  const quiet =
+    skipped.length === 0
+      ? []
+      : [
+          `- ${SLURP_CONTINUITY_EVENT_LABELS.chosen_skip} ${skipped.length === 1 ? "once" : `${skipped.length} times`} lately.`,
+        ];
   const memories = (input.memories ?? []).map(line).filter(Boolean).slice(0, MAX_MEMORIES);
-  if (facts.length === 0 && events.length === 0 && memories.length === 0) return "";
+  if (facts.length === 0 && events.length === 0 && quiet.length === 0 && memories.length === 0) return "";
   const own = (record: { threadId: string | null }) =>
     input.threadId && record.threadId === input.threadId ? " (with this person)" : "";
   return [
@@ -90,11 +101,12 @@ export function slurpContinuityInstruction(input: {
     ...facts.map(
       (fact) => `- ${SLURP_CONTINUITY_FACT_LABELS[fact.factType] ?? fact.factType}${own(fact)}: ${line(fact.text)}`,
     ),
-    ...(events.length > 0 ? ["Recently:"] : []),
+    ...(events.length > 0 || quiet.length > 0 ? ["Recently:"] : []),
     ...events.map(
       (event) =>
         `- ${SLURP_CONTINUITY_EVENT_LABELS[event.eventType] ?? event.eventType}${own(event)}${eventDetail(event)}.`,
     ),
+    ...quiet,
     ...(memories.length > 0
       ? [
           "People named in your memory are from your life off Slurp: never make them a collab, a tag or a guest in what you write now unless your brief names them.",
