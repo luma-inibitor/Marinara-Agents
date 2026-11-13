@@ -488,7 +488,8 @@ assert.ok(
 // --- 7. Wiring --------------------------------------------------------------------------------
 const generation = server("features/feed/slp-generation-service.ts");
 const postSpice = server("features/feed/slp-post-spice.ts");
-assert.match(generation, /const spiced = await planSlurpPostSpice\(db, \{/u, "posts plan their spicy side");
+assert.match(generation, /const spiced = await planSlurpPostIdea\(db, \{/u, "posts plan their spicy side");
+assert.match(server("features/feed/slp-post-ideation-service.ts"), /await planSlurpPostSpice\(db, \{ \.\.\.rest,/u);
 assert.match(postSpice, /slurpSpiceAngle\(\{/u, "posts draw their spicy angle");
 assert.match(generation, /slurpPostLevelInstruction\(postLevel\),\n\s*spiceAngle\?\.line \?\? ""/u);
 assert.match(postSpice, /slurpSpice: \{ kind: angle\.kind/u, "the post keeps what made it spicy");

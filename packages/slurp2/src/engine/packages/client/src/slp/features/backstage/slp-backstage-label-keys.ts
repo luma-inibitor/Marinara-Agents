@@ -115,6 +115,8 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   previewWholePictures: "ui.slurp.settings.images.previewWholePictures",
   blurPictures: "ui.slurp.settings.images.blurPictures",
   lifeMomentRate: "ui.slurp.settings.lifeMomentRate",
+  characterLedIdeas: "ui.slurp.settings.characterLedIdeas",
+  lockedShare: "ui.slurp.settings.lockedShare",
   storyJobs: "ui.slurp.settings.storyJobs",
   fanActivityRunsPerDay: "ui.slurp.settings.audience.runsPerDay",
   audienceReactionBank: "ui.slurp.settings.audience.reactionBank",

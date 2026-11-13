@@ -20,4 +20,4 @@ export { pauseSlpRefreshScheduler } from "./slp-refresh-scheduler-service.js";
 export { previewSlurpPromptBlocks } from "./slp-prompt-preview-service.js";
 export type { SlurpPromptBlockPreview } from "./slp-prompt-preview-service.js";
 export { generateCreatorPost } from "./slp-generation-service.js";
-export { resolveSlurpAutomaticPostAccess } from "./slp-automatic-post-access.js";
+export { resolveSlurpAutomaticPostAccess } from "./slp-post-ideation-access.js";
