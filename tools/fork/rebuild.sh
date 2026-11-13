@@ -53,17 +53,7 @@ case "$previous" in
   *) build=1 ;;
 esac
 version="$fork_base-luma.${FORK_BUILD:-$build}"
-sed -i "/id: \"slurp2\",/{n;s/version: \"[^\"]*\"/version: \"$version\"/}" scripts/build-feature-packages.mjs
-sed -i "s/SLURP2_VERSION = \"[^\"]*\"/SLURP2_VERSION = \"$version\"/" \
-  packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-release.ts
-changelog=packages/slurp2/CHANGELOG.md
-{
-  head -n 1 "$changelog"
-  printf '\n## %s — %s\n\n- Fork build of Slurp %s with these fixes: %s\n' \
-    "$version" "$(date +%F)" "$upstream_version" "$(printf '%s' "$notes" | paste -sd' ' -)"
-  tail -n +2 "$changelog"
-} >"$changelog.new"
-mv "$changelog.new" "$changelog"
+node "$tools/stamp-version.mjs" "$version" "$upstream_version" "$(printf '%s' "$notes" | paste -sd' ' -)"
 
 "$tools/in-node.sh" node scripts/build-feature-packages.mjs slurp2
 # Light, and needs unzip, which the container image lacks: run on the host (Node 22 is enough).
