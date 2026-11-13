@@ -117,9 +117,40 @@ export type SlpDeepDetailsRecord = {
     } | null;
     /** The Creator's dial and the level this post was planned at (Beats). Absent before 0.2.49. */
     heat?: { dial: string; planned: string };
+    /** Character-led ideas: what the Creator chose this post to be about, and why. Absent with the setting off. */
+    ideation?: SlpDeepDetailsIdeation;
   };
   /** What shaped the voice of this post (the 7b0 flavour brief). Absent on records made before it was recorded. */
   flavour?: SlpDeepDetailsFlavour | null;
+};
+
+/**
+ * The idea step of one post (server `modules/feed/slp-post-ideation.ts`): the prompt, every raw answer
+ * with what was wrong with it, the idea it settled on, and why a post kept today's planner instead.
+ */
+export type SlpDeepDetailsIdeation = {
+  /** `used`: the idea drove the post. `fallback`: the answers failed the checks. `skipped`: a directed post. */
+  status: "used" | "fallback" | "skipped";
+  reason: string | null;
+  prompt: { system: string; user: string } | null;
+  attempts: { raw: string; problems: string[] }[];
+  idea: {
+    subject: string;
+    idea: string;
+    offer: string | null;
+    sources: string[];
+    cast: string[];
+    place: string;
+    moment: string;
+    outfit: string | null;
+    wardrobeId: string | null;
+    camera: string | null;
+    heat: string;
+    followsPlan: string | null;
+    tags: string[];
+  } | null;
+  /** Whether plans could be this post's hook, were background only, or there were none. */
+  plans: "hook" | "background" | "none";
 };
 
 /**

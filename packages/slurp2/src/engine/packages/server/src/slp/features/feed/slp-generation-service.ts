@@ -11,7 +11,8 @@ import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
 import { newId } from "../../../utils/id-generator.js";
 import type { DB } from "../../../db/connection.js";
 import { describeSlurpPostCondition } from "./slp-post-condition-service.js";
-import { planSlurpPostSpice, resolveSlurpPostDial } from "./slp-post-spice.js";
+import { resolveSlurpPostDial } from "./slp-post-spice.js";
+import { planSlurpPostIdea } from "./slp-post-ideation-service.js";
 import { logger, logDebugOverride } from "../../../lib/logger.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import { resolveStoredChatOptions } from "../../../services/generation/generation-parameters.js";
@@ -53,7 +54,7 @@ import { readSlurpCreatorSteering, removeSlurpCreatorNudge } from "../../data/cr
 import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import { resolveSlurpEventInstruction } from "../world/slp-world-contract.js";
 import { loadSlurpStoryState } from "../storylines/slp-storylines-contract.js";
-import { slurpConditionCloset, slurpStoryNow } from "../../modules/storylines/slp-story-state.js";
+import { slurpStoryNow } from "../../modules/storylines/slp-story-state.js";
 import { slpCreatorPublicIdentityFor, protectBoundedCreatorGeneratedText } from "./slp-public-identity.js";
 import {
   buildNoodlerPostMessages,
@@ -89,7 +90,6 @@ import { slurpCreatorStrategy, slurpStrategyInstruction } from "../../modules/cr
 import { createSlurpPostProvider } from "../../base/host/slp-generation-integrations.js";
 import {
   resolveSlurpWardrobeSelection,
-  slurpPostCloset,
   slurpRecentLookIds,
   slurpWardrobePrompt,
 } from "../../modules/feed/slp-wardrobe-selection.js";
@@ -281,8 +281,8 @@ export async function generateCreatorPost(
         effort,
       })
     : null;
-  const camera = slurpScreenFreeCamera(shoot?.cameraSource, screens) ?? cameraSource;
-  const cameraInstruction = camera ? slurpCameraSourceInstruction(camera) : undefined;
+  let camera = slurpScreenFreeCamera(shoot?.cameraSource, screens) ?? cameraSource;
+  let cameraInstruction = camera ? slurpCameraSourceInstruction(camera) : undefined;
   // The shoot rides in the content-type block rather than a block of its own: it is part of what
   // this post is for, and a second block would be dead for every post that is not a callback.
   const contentTypeInstruction = axes
@@ -324,13 +324,11 @@ export async function generateCreatorPost(
     () => SLURP_BUILT_IN_EXPLICIT_LEVEL,
   );
   // Beats plan the heat per post, up to the dial; caption and picture both read this one level.
-  const explicitLevel = plannedBeat
+  const plannedLevel = plannedBeat
     ? slurpPlannedExplicitLevel(dialLevel, plannedBeat.heatFloor ?? 0, account.id, sequence)
     : dialLevel;
-  const post = { level: explicitLevel, access: input.request.access, intent: axes?.intent, scene: askModelForScene };
-  const { looks: wardrobeLooks, bare } = slurpPostCloset(slurpConditionCloset(looks, story.state.wardrobe), post);
-  // What makes this post spicy, in this Creator's own way. Locked posts get it; teasers hint at it.
-  const spiced = await planSlurpPostSpice(db, {
+  // What makes this post spicy, in this Creator's own way, then what it is about (character-led ideas).
+  const spiced = await planSlurpPostIdea(db, {
     account,
     source: linkedPublicAccount,
     disclosureMode,
@@ -338,17 +336,18 @@ export async function generateCreatorPost(
     intent: axes?.intent,
     teaser: isTeaser,
     directed,
-    explicitLevel,
+    explicitLevel: plannedLevel,
     dialLevel,
     collabs: settings.creatorCollabs,
     recentPosts,
     sequence,
     variation,
     beat: plannedBeat,
-    teasedKind: purpose.spiceKind,
     at,
+    idea: { input, camera, purpose, shoot, project, reusedMedia, looks, story, beatRun, scene: askModelForScene },
   });
-  const { postLevel, angle: spiceAngle, beat } = spiced;
+  const { postLevel, angle: spiceAngle, beat, wardrobeLooks, bare, pictureLevel: explicitLevel } = spiced;
+  [camera, cameraInstruction] = [spiced.camera, spiced.cameraLine];
   const mentioned = await resolveSlurpMentionedCast(db, account.id, input.request.noodlerPostGuide ?? "");
   const castIds = [...new Set([...(beat?.castIds ?? []), ...mentioned.ids])];
   variation = spiced.variation;
@@ -602,7 +601,7 @@ export async function generateCreatorPost(
           draftImagePrompt,
           askModelForImagePrompt,
           wardrobeSelection,
-          planner: { mode: settings.postPlanner, beat, claimCheck, heat: { dial: dialLevel, planned: explicitLevel } },
+          planner: { ...spiced.planner, beat, claimCheck, heat: { dial: dialLevel, planned: explicitLevel } },
           flavour: flavourShaped,
         }),
       );

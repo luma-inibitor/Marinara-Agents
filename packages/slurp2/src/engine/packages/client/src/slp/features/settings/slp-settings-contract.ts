@@ -133,6 +133,10 @@ export type SlurpSettings = {
   shareWithMemory: boolean;
   postPlanner: "classic" | "beats";
   lifeMomentRate: "rarely" | "sometimes" | "often";
+  /** The Creator chooses what each automatic post is about (one extra model call). */
+  characterLedIdeas: boolean;
+  /** With character-led ideas on: the share of automatic posts that go out locked, 0-1. */
+  lockedShare: number;
   /** One weight per Story job (0-10, 0 = never); `SLURP_STORY_JOB_DEFAULTS` is balanced. */
   storyJobs: { countdown: number; newPost: number; comment: number; poll: number; earlier: number; plain: number };
   sharedPreseed: boolean;

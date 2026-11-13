@@ -90,6 +90,7 @@ import {
   SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,
   SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION,
 } from "./slp-settings-image-prompts.js";
+import { SLURP_IDEATION_SETTINGS_DEFAULTS, slurpIdeationSettingsShape } from "./slp-settings-ideation.js";
 import {
   LEGACY_SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE,
   LEGACY_SLURP_DEFAULT_GENERATION_GUIDANCE,
@@ -305,11 +306,9 @@ export const slurpSettingsSchema = z.object({
   flavourFromAgents: z.boolean(),
   memoryRecall: z.enum(["whole", "relevant"]),
   shareWithMemory: z.boolean(), // Tell Long-Term Memory about the Creators; off by default (`slp-ltm-intake.ts`).
-  /**
-   * How ordinary posts are planned. `classic` lets the model pick the subject; `beats` picks a
-   * concrete beat from the Creator's card first. See `modules/feed/slp-post-beat.ts`.
-   */
+  /** How ordinary posts are planned: `classic` lets the model pick, `beats` a card beat first (`slp-post-beat.ts`). */
   postPlanner: z.enum(["classic", "beats"]),
+  ...slurpIdeationSettingsShape, // The Creator chooses the idea (`slp-post-ideation.ts`).
   /** "Daily life": how often an ordinary post is a day-to-day life moment. See `slp-life-moments.ts`. */
   lifeMomentRate: z.enum(["rarely", "sometimes", "often"]),
   /** What automatic Stories are for: one weight per job, 0 = never. See `slurpStoryPurpose`. */
@@ -573,6 +572,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   shareWithMemory: false,
   // Beats by default since 0.2.55: the fixes for same-y, canon-less, tame posts live there.
   postPlanner: "beats",
+  ...SLURP_IDEATION_SETTINGS_DEFAULTS,
   lifeMomentRate: "sometimes",
   storyJobs: { ...SLURP_STORY_JOB_DEFAULTS },
   sharedPreseed: false,

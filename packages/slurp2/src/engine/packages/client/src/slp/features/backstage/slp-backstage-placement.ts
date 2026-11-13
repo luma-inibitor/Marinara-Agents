@@ -164,6 +164,8 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   shareWithMemory: place("engine", "all-slurp", "long-term memory", "tell memory", "creator facts", "couples"),
   postPlanner: slurp("general", "post ideas", "post planner", "beats", "subjects"),
   lifeMomentRate: slurp("general", "daily life", "life moments", "everyday"),
+  characterLedIdeas: slurp("general", "character ideas", "post ideas", "card", "interests"),
+  lockedShare: slurp("general", "locked share", "locked posts", "subscribers", "free posts"),
   storyJobs: slurp("general", "story jobs", "what stories do", "countdown", "poll", "story mix"),
   sharedPreseed: slurp("storylines", "shared ideas", "world tick", "niche"),
   sharedWorldEvents: slurp("storylines", "slurp-wide events", "platform events"),

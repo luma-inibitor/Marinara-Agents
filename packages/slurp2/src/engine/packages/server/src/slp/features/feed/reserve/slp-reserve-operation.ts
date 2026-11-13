@@ -17,7 +17,7 @@ import {
 } from "../../../modules/feed/slp-posting-interval.js";
 import { readSlurpCreatorPaceFactor } from "../../../data/creators/slp-steering-storage.js";
 import { generateCreatorPost } from "../slp-generation-service.js";
-import { resolveSlurpAutomaticPostAccess } from "../slp-automatic-post-access.js";
+import { resolveSlurpAutomaticPostAccess } from "../slp-post-ideation-access.js";
 import { slurpDeepDetailsImageRunRecorder } from "../../../data/feed/slp-post-deep-details-storage.js";
 import { generateCreatorPostImage } from "../../media/slp-media-contract.js";
 import { slurpHeldCollabDrop } from "../../projects/slp-projects-contract.js";

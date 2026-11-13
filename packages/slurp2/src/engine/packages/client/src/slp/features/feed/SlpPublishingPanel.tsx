@@ -270,6 +270,30 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
           disabled={updateSettings.isPending}
           onChange={(value: SlurpSettings["postPlanner"]) => void update("postPlanner", value)}
         />
+        {/* The Creator reads their whole card and chooses the idea; directed posts keep their path. */}
+        <Toggle
+          settingKey="characterLedIdeas"
+          label={t("ui.slurp.settings.characterLedIdeas")}
+          detail={t("ui.slurp.settings.characterLedIdeasDetail")}
+          value={settings.characterLedIdeas}
+          onChange={(value) => update("characterLedIdeas", value)}
+        />
+        <Field
+          settingKey="lockedShare"
+          label={t("ui.slurp.settings.lockedShare")}
+          detail={t("ui.slurp.settings.lockedShareDetail")}
+        >
+          <RangeSetting
+            label={t("ui.slurp.settings.lockedShare")}
+            value={Math.round(settings.lockedShare * 100)}
+            min={0}
+            max={100}
+            step={5}
+            format={(percent) => `${percent}%`}
+            disabled={updateSettings.isPending || !settings.characterLedIdeas}
+            onSave={(percent) => update("lockedShare", percent / 100)}
+          />
+        </Field>
         {/* Life moments are a beat source: the model's-choice planner never picks one. */}
         <ChoiceSetting
           settingKey="lifeMomentRate"
