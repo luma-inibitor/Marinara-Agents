@@ -7,6 +7,7 @@
 import assert from "node:assert/strict";
 import {
   compileSlurpFlavourBrief,
+  CORE_DESCRIPTION_MAX,
   type SlurpFlavourCard,
   type SlurpFlavourUse,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-creator-flavour.ts";
@@ -38,13 +39,20 @@ const anchors = (patch: Partial<SlurpCanonAnchors> = {}): SlurpCanonAnchors => (
 // about the player, or in the scenario.
 const filler =
   "She runs a small ceramics studio by the harbour and sells glazed cups at the weekend market. She keeps a ginger cat called Miso. She likes early ferries and cold mornings. She drinks too much tea. She collects sea glass in a jar by the window. She hums along to old radio shows. She repairs chipped bowls with gold lacquer. She rows out to the buoy on Sundays. She teaches a pottery class for children on Wednesdays. She keeps every failed cup on a shelf she calls the museum. She trades cups for bread with the baker next door. She swims in the harbour until October.";
+// The core holds up to CORE_DESCRIPTION_MAX characters, so the late fact goes well past it.
+const padTo = (text: string, separator = " ") => {
+  let out = text;
+  while (out.length <= CORE_DESCRIPTION_MAX + 1000) out = `${out}${separator}${text}`;
+  return out;
+};
+const longFiller = padTo(filler);
 type Fixture = { id: string; name: string; card: SlurpFlavourCard; fact: RegExp; essential: string };
 const FIXTURES: Fixture[] = [
   {
     id: "prose",
     name: "Ines",
     card: {
-      description: `${filler} She has been deaf since birth and reads lips.`,
+      description: `${longFiller} She has been deaf since birth and reads lips.`,
       personality: "Patient, dry, stubborn about glaze recipes.",
     },
     fact: /deaf since birth/u,
@@ -54,8 +62,7 @@ const FIXTURES: Fixture[] = [
     id: "structured",
     name: "Kiri",
     card: {
-      description:
-        '[character("Kiri") { Kind("fox spirit") Age("looks 24") Job("shrine keeper" + "tea seller") Likes("plum wine" + "rain" + "old folk songs" + "teasing travellers") Home("a mountain shrine above the cedar line") Clothes("white kosode" + "red hakama" + "straw sandals") Friends("the ferryman Goro" + "a crow called Ink") Fears("iron bells" + "dogs") Keeps("a lacquer box of letters" + "a cracked hand mirror") Mornings("sweeps the shrine steps" + "brews roasted tea") Evenings("lights the stone lanterns" + "counts the offerings") Speech("never speaks aloud" + "writes on a slate") }]',
+      description: `[character("Kiri") { ${padTo('Kind("fox spirit") Age("looks 24") Job("shrine keeper" + "tea seller") Likes("plum wine" + "rain" + "old folk songs" + "teasing travellers") Home("a mountain shrine above the cedar line") Clothes("white kosode" + "red hakama" + "straw sandals") Friends("the ferryman Goro" + "a crow called Ink") Fears("iron bells" + "dogs") Keeps("a lacquer box of letters" + "a cracked hand mirror") Mornings("sweeps the shrine steps" + "brews roasted tea") Evenings("lights the stone lanterns" + "counts the offerings")')} Speech("never speaks aloud" + "writes on a slate") }]`,
     },
     fact: /never speaks aloud/u,
     essential: "never speaks aloud; writes on a slate",
@@ -64,8 +71,7 @@ const FIXTURES: Fixture[] = [
     id: "multilingual",
     name: "ユキ",
     card: {
-      description:
-        "ユキは札幌の小さな喫茶店で働いている。雪の日が好きで、古いレコードを集めている。猫を二匹飼っている。週末は市場で花を買う。朝は必ず濃いコーヒーを淹れる。店の窓辺に小さな植物を並べている。常連客の名前をすべて覚えている。冬になると手編みのマフラーを巻いて出勤する。休みの日は古本屋を何軒も回る。映画館の一番後ろの席が好きだ。祖母から教わった煮物をよく作る。自転車で川沿いを走るのが日課だ。写真を撮るが誰にも見せない。夜は銭湯に寄ってから帰る。妹とは毎週電話で話している。店長の冗談にはいつも呆れている。甘いものには目がなく、特にあんこが好きだ。雨の日は店で静かなジャズを流す。夏祭りの屋台を毎年楽しみにしている。部屋には読みかけの本が積んである。春は円山公園で桜を見る。古い喫茶店のマッチ箱を集めている。苦手なものは早起きと辛い料理だ。友達の誕生日は手帳に全部書いてある。閉店後に一人でピアノを弾くことがある。地下鉄より路面電車を選ぶ。秋には栗ご飯を炊く。近所の犬に名前をつけて呼んでいる。手紙は万年筆で書く。温泉旅行のために少しずつ貯金している。ラジオの深夜番組を聴きながら眠る。編み物は三年続けている。彼女は日本語しか話せない。",
+      description: `${padTo("ユキは札幌の小さな喫茶店で働いている。雪の日が好きで、古いレコードを集めている。猫を二匹飼っている。週末は市場で花を買う。朝は必ず濃いコーヒーを淹れる。店の窓辺に小さな植物を並べている。常連客の名前をすべて覚えている。冬になると手編みのマフラーを巻いて出勤する。休みの日は古本屋を何軒も回る。映画館の一番後ろの席が好きだ。祖母から教わった煮物をよく作る。自転車で川沿いを走るのが日課だ。写真を撮るが誰にも見せない。夜は銭湯に寄ってから帰る。妹とは毎週電話で話している。店長の冗談にはいつも呆れている。甘いものには目がなく、特にあんこが好きだ。雨の日は店で静かなジャズを流す。夏祭りの屋台を毎年楽しみにしている。部屋には読みかけの本が積んである。春は円山公園で桜を見る。古い喫茶店のマッチ箱を集めている。苦手なものは早起きと辛い料理だ。友達の誕生日は手帳に全部書いてある。閉店後に一人でピアノを弾くことがある。地下鉄より路面電車を選ぶ。秋には栗ご飯を炊く。近所の犬に名前をつけて呼んでいる。手紙は万年筆で書く。温泉旅行のために少しずつ貯金している。ラジオの深夜番組を聴きながら眠る。編み物は三年続けている。", "")}彼女は日本語しか話せない。`,
       personality: "静かで、頑固で、よく笑う。",
     },
     fact: /日本語しか話せない/u,
@@ -75,7 +81,7 @@ const FIXTURES: Fixture[] = [
     id: "nonverbal",
     name: "Odile",
     card: {
-      description: `${filler} {{char}} cannot speak and answers {{user}} only in sign language.`,
+      description: `${longFiller} {{char}} cannot speak and answers {{user}} only in sign language.`,
     },
     fact: /cannot speak/u,
     essential: "cannot speak; uses sign language and writing",
@@ -84,7 +90,7 @@ const FIXTURES: Fixture[] = [
     id: "multi-person",
     name: "The Lanterns",
     card: {
-      description: `${filler} The page belongs to two sisters, Ana and Bea, who write in turns.`,
+      description: `${longFiller} The page belongs to two sisters, Ana and Bea, who write in turns.`,
     },
     fact: /two sisters/u,
     essential: "This page is run by two sisters, Ana and Bea, who write in turns",
