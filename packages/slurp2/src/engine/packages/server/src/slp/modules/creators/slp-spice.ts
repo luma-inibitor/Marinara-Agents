@@ -315,19 +315,22 @@ export function slurpSpiceAngle(input: {
   // into the shower on the same evening (#104). The level stays; only the kind spreads out.
   const elsewhere = (id: string) => (input.feed ?? []).filter((entry) => entry.kind === id).length;
   const teased = locked ? kinds.find((candidate) => candidate.id === input.teasedKind) : undefined;
+  // The kind of the post before never comes back next while another kind is allowed. A softer weight
+  // lost to the repeat penalty: with two kinds at "suggestive", a third of posts repeated the last one.
+  const fresh = kinds.filter((candidate) => candidate.id !== lastKind);
   const kind =
     teased ??
     slurpWeightedPick(
       "spiceKind",
       seed,
       input.sequence,
-      kinds.map((candidate) => ({
+      (fresh.length ? fresh : kinds).map((candidate) => ({
         value: candidate,
         weight:
           // The top of the range carries the most weight: an explicit page is mostly explicit.
           (1 + 2 * (LEVEL_INDEX(candidate.min) / Math.max(1, top))) *
           (input.creator.turnOns.some((on) => candidate.words.some((word) => shareWord(on, word))) ? 3 : 1) *
-          (lastKind === candidate.id ? 0.1 : 0.5 ** repeats(candidate.id)) *
+          0.5 ** repeats(candidate.id) *
           SLURP_FEED_KIND_DAMPING ** elsewhere(candidate.id),
       })),
     );
@@ -363,6 +366,18 @@ export function slurpSpiceAngle(input: {
     partner: locked ? partner : null,
     taste: taste?.text ?? null,
   };
+}
+
+/**
+ * Whether a locked post of the Creator's own keeps its ordinary scene instead of a spicy angle, about
+ * half the time, fixed per post. Every locked post used to become an undressing shoot, so most of a
+ * page was the same picture. A locked post can be premium for its candor or access too.
+ */
+export function slurpLockedKeepsScene(seed: string, sequence: number): boolean {
+  return slurpWeightedPick("lockedScene", seed, sequence, [
+    { value: true, weight: 1 },
+    { value: false, weight: 1 },
+  ]);
 }
 
 /** How much one other Creator's spicy post of the same kind in the last day lowers this kind's weight. */
