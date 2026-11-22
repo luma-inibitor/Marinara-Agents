@@ -2,7 +2,7 @@
 
 This is a fork of [Pasta-Devs/Marinara-Agents](https://github.com/Pasta-Devs/Marinara-Agents), kept at
 [luma-inibitor/Marinara-Agents](https://github.com/luma-inibitor/Marinara-Agents). It carries local
-patches to Slurp (`slurp2`) and publishes a full Agent catalog that a Marinara Engine can read instead of
+patches to Slurp (`slurp2`) and Otome Hearth (`otome-forge`) and publishes a full Agent catalog that a Marinara Engine can read instead of
 the official one.
 
 ## Branches
@@ -12,7 +12,7 @@ the official one.
 | `staging`            | Pristine mirror of `upstream/staging`. Never commit here.                                |
 | `patch/*`            | One branch per fix, based on `staging`, each with its own regression test in `tests/`.   |
 | `patch/fork-tooling` | This file, `tools/fork/`, and a release-notes test that accepts the fork version. Applied after the patches. |
-| `luma/staging`       | `staging` + patches + fork tooling + one generated slurp2 build commit. Rebuilt, never edited. |
+| `luma/staging`       | `staging` + patches + fork tooling + one generated build commit for the patched packages. Rebuilt, never edited. |
 
 `patch/*` branches change source and tests only. Generated files (`packages/slurp2/client.js`,
 `server.mjs`, `manifest.json`, `artifacts/`, `catalog/`) change only in the build commit on
@@ -40,7 +40,7 @@ MARINARA_AGENT_CATALOG_URL=https://raw.githubusercontent.com/luma-inibitor/Marin
   offered.
 - The Agents page labels the catalog as custom.
 
-The fork's slurp2 version is the next upstream patch number with a `-luma.<n>` suffix: a build of
+Each patched package's fork version is the next upstream patch number with a `-luma.<n>` suffix: a build of
 upstream `0.4.21` is `0.4.22-luma.1`, then `0.4.22-luma.2`. It sorts above the upstream version it was
 built from, so the Engine offers it as an update. It sorts below the next upstream release (`0.4.22`), so
 the official catalog would offer that release over it. The package CHANGELOG stays newest first, which the
@@ -55,8 +55,9 @@ tools/fork/push-sync.sh --dry-run
 tools/fork/push-sync.sh
 ```
 
-`rebuild.sh` cherry-picks the patches onto `staging`, sets the slurp2 version, adds a CHANGELOG and
-splash entry (`stamp-version.mjs`), builds slurp2, validates the catalog, retargets the catalog URLs and commits. It pushes nothing.
+`rebuild.sh` cherry-picks the patches onto `staging`, and for each package with a patch (`patch/slurp-*` is
+slurp2, `patch/otome-*` is otome-forge) sets its version, adds a CHANGELOG entry (and slurp2's splash entry,
+`stamp-version.mjs`) and builds it. It then validates the catalog, retargets the catalog URLs and commits. It pushes nothing.
 `push-sync.sh` pushes `staging`, the patches, `patch/fork-tooling` and `luma/staging` to `origin` and to
 every remote in `git config fork.mirror`, with `--force-with-lease --force-if-includes`.
 
@@ -69,7 +70,7 @@ The build needs an Engine checkout with `node_modules` (`MARINARA_ENGINE_ROOT`, 
 - A patch that rebases to nothing was adopted upstream: delete its branch and its line in `patches.list`.
 - A conflict stops the rebase. Resolve it on the patch branch, then run `rebuild.sh` without `--sync`.
 - Upstream may change a line a patch's test asserts on. Fix the test on the patch branch.
-- Run the slurp2 tests on `luma/staging` before pushing (below).
+- Run the slurp2 and otome-forge tests on `luma/staging` before pushing (below).
 - `patch/slurp-reference-scope` carries Engine fix 314a71a586 (#5865) in the vendored
   `illustrator-references.ts`, with a `matchLibraryInPrompt` flag that keeps Noodle's old matching. Drop it
   once upstream re-vendors that file.
@@ -92,6 +93,7 @@ refuses to start while another heavy container runs.
 ```sh
 tools/fork/in-node.sh npm ci
 tools/fork/in-node.sh node scripts/run-slurp-regressions.mjs
-tools/fork/in-node.sh node scripts/typecheck-packages.mjs slurp2
+tools/fork/in-node.sh node scripts/typecheck-packages.mjs slurp2 otome-forge
+tools/fork/in-node.sh npm run test:otome-forge
 tools/fork/in-node.sh node_modules/.bin/tsx --tsconfig tests/tsconfig.regressions.json tests/slurp2-architecture.regression.ts
 ```
