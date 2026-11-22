@@ -5115,10 +5115,13 @@ export function quizRefillMessages({ world, units, asked, count }: QuizRefillInp
     `You write ${count} new statements for a personality quiz in an otome visual novel, and answer each one as every love interest below would answer it.`,
     QUIZ_SCALE_TEXT,
     "Reply with ONLY one line per new statement, in exactly this format:",
-    adult ? `${QUIZ_LINE_FORMAT}   (or [18+] <statement>: … for a statement about sex or kinks)` : QUIZ_LINE_FORMAT,
+    adult
+      ? `${QUIZ_LINE_FORMAT}   (or [18+] <statement>: … for a statement about sex or kinks, and [18+] [lead N] <statement>: … for a power pair's half)`
+      : `${QUIZ_LINE_FORMAT}   (or [lead N] <statement>: … for a power pair's half)`,
     "RULES",
     `- A statement is one short first-person sentence a person agrees or disagrees with, for example "I'd rather plan a date than improvise one." Cover love and affection, relationships and conflict, values and everyday temperament${adult ? ", and sex, kinks and intimacy" : ""}.`,
     "- Never repeat or rephrase a statement already asked (listed below), and never write two that ask the same thing.",
+    `- About one statement in five belongs to a power pair: two statements about the same dynamic, one from the side that takes charge and one from the side that gives it up${adult ? ' (for example "I like pinning my partner down." and "I like having my wrists held down.")' : ' (for example "I like being the one who decides our plans." and "I like it when someone else decides our plans.")'}. Write both lines of a pair one after the other, beginning the first with [lead N] and the second with [yield N], N being the pair's number (1, 2, 3, …). Every other statement carries no such tag, and a statement that only touches on power without one side taking charge is never a pair.`,
     adult
       ? "- Statements about sex, kinks and intimacy are welcome, as frank as the content contract allows: begin each of those lines with [18+]."
       : "- This story keeps sex, kinks and intimacy out of the quiz: write no statement about them.",

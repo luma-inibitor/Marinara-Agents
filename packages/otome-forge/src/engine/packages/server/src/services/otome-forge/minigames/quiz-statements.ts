@@ -1,12 +1,14 @@
 // ──────────────────────────────────────────────
 // Otome Hearth: the personality quiz's starting statements (#2174)
 // ──────────────────────────────────────────────
-// 100 statements written for this package, after the themes of online kink, relationship and personality tests (never
+// The statements written for this package, after the themes of online kink, relationship and personality tests (never
 // their wording). Each has a stable id (its category's letter and number: a stored answer or score is keyed by it, so
 // an id is never reused or renumbered), a category, and `adult` for the ones about sex and kinks, which a story shows,
 // scores and writes only while its Heat is NSFW. They are asked interleaved, one category after another, so the first
 // few already cover a little of everything. A statement is phrased so 1 (strongly disagree) to 5 (strongly agree)
-// reads naturally.
+// reads naturally. Statements about who leads and who yields come in pairs, one for each side (QUIZ_PAIRS), and score as
+// complements: the player's answer on one half against a love interest's on the other.
+import type { QuizPair } from "../../../../../client/src/features/otome-forge/shared/quiz.js";
 
 export type QuizCategory = "intimacy" | "love" | "together" | "temperament";
 
@@ -15,6 +17,7 @@ export interface QuizStarter {
   text: string;
   category: QuizCategory;
   adult: boolean;
+  power?: QuizPair;
 }
 
 const INTIMACY = [
@@ -50,6 +53,10 @@ const INTIMACY = [
   "I'd let a partner decide what I wear, or don't, for a night.",
   "Sex is better with deep emotional intimacy than without it.",
   "A one-night stand can be as good as sex with someone I love.",
+  "I like being the one who decides what happens in bed.",
+  "I'd enjoy keeping a partner as my pet in the bedroom.",
+  "I'd enjoy deciding what a partner wears, or doesn't, for a night.",
+  "I'd enjoy pushing a partner past one more orgasm.",
 ];
 
 const LOVE = [
@@ -96,6 +103,7 @@ const TOGETHER = [
   "I want to build a life together, not just spend time together.",
   "Teasing is one of my favourite ways to flirt.",
   "I'd stay with someone through their worst years.",
+  "I like being looked after by someone who protects me.",
 ];
 
 const TEMPERAMENT = [
@@ -127,6 +135,7 @@ const TEMPERAMENT = [
   "I often put others' needs before my own.",
   "I'm too proud to ask for help.",
   "Ambition drives most of what I do.",
+  "I'm happy to follow someone else's lead.",
 ];
 
 const GROUPS: ReadonlyArray<{ category: QuizCategory; letter: string; texts: readonly string[] }> = [
@@ -136,15 +145,34 @@ const GROUPS: ReadonlyArray<{ category: QuizCategory; letter: string; texts: rea
   { category: "together", letter: "t", texts: TOGETHER },
 ];
 
+/** The starters' power pairs: the side that leads, then the side that yields. */
+export const QUIZ_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ["i02", "i03"],
+  ["i06", "i05"],
+  ["i33", "i18"],
+  ["i34", "i28"],
+  ["i35", "i30"],
+  ["i36", "i29"],
+  ["p09", "p29"],
+  ["t14", "t21"],
+];
+
+const pairOf = (id: string): QuizPair | undefined => {
+  for (const [lead, yields] of QUIZ_PAIRS) {
+    if (id === lead) return { side: "lead", pair: yields };
+    if (id === yields) return { side: "yield", pair: lead };
+  }
+  return undefined;
+};
+
 /** Every starting statement, interleaved by category (see the header). */
 export const QUIZ_STARTERS: readonly QuizStarter[] = (() => {
   const lists = GROUPS.map(({ category, letter, texts }) =>
-    texts.map((text, index) => ({
-      id: `${letter}${String(index + 1).padStart(2, "0")}`,
-      text,
-      category,
-      adult: category === "intimacy",
-    })),
+    texts.map((text, index) => {
+      const id = `${letter}${String(index + 1).padStart(2, "0")}`;
+      const power = pairOf(id);
+      return { id, text, category, adult: category === "intimacy", ...(power ? { power } : {}) };
+    }),
   );
   const longest = Math.max(...lists.map((list) => list.length));
   return Array.from({ length: longest }, (_, index) => lists.flatMap((list) => list[index] ?? [])).flat();
