@@ -1,5 +1,5 @@
 // Otome Hearth (#2174): the personality quiz, played while a chapter is planned.
-// - The 100 starting statements: stable ids, a category and an 18+ flag each, interleaved by category.
+// - The 106 starting statements: stable ids, a category and an 18+ flag each, interleaved by category.
 // - The maintainer's line format, "<statement>: <name> <score> | …", read leniently: numbering, brackets, an [18+] tag
 //   wherever it sits (inside bold or quotes, at the end, before a colon; never a bare 18+), a colon inside the
 //   statement, "Kai: 5" or "Kai (5)", titles and honorifics; a score outside 1–5 or a name that is no one (or two
@@ -123,11 +123,11 @@ async function quizWorld(runKey: string, options: Parameters<typeof storyWorld>[
   return { ...t, background, deps, ask, settle, quiz };
 }
 
-test("the 100 starting statements: stable ids, a category and an 18+ flag each, interleaved by category", () => {
-  assert.equal(QUIZ_STARTERS.length, 100);
-  assert.equal(new Set(QUIZ_STARTERS.map((statement) => statement.id)).size, 100);
-  assert.equal(new Set(QUIZ_STARTERS.map((statement) => statement.text.toLowerCase())).size, 100, "no repeats");
-  assert.equal(QUIZ_STARTERS.filter((statement) => statement.adult).length, 32);
+test("the 106 starting statements: stable ids, a category and an 18+ flag each, interleaved by category", () => {
+  assert.equal(QUIZ_STARTERS.length, 106);
+  assert.equal(new Set(QUIZ_STARTERS.map((statement) => statement.id)).size, 106);
+  assert.equal(new Set(QUIZ_STARTERS.map((statement) => statement.text.toLowerCase())).size, 106, "no repeats");
+  assert.equal(QUIZ_STARTERS.filter((statement) => statement.adult).length, 36);
   assert.ok(QUIZ_STARTERS.every((statement) => statement.adult === (statement.category === "intimacy")));
   assert.ok(QUIZ_STARTERS.every((statement) => /^[pilt]\d{2}$/.test(statement.id) && statement.text.length < 120));
   assert.deepEqual(
@@ -273,7 +273,7 @@ test("GET /quiz queues the love interests' answers once, never waits, and keeps 
   const first = await t.ask("GET", "/runs/:run/quiz");
   assert.equal(first.status, 200);
   assert.equal(first.body.scoring, true, "their answers are being written");
-  assert.equal(first.body.open.length, 68, "the 32 statements about sex and kinks are hidden under SFW");
+  assert.equal(first.body.open.length, 70, "the 36 statements about sex and kinks are hidden under SFW");
   assert.ok(first.body.open.every((statement) => !statement.id.startsWith("i")));
   assert.deepEqual(first.body.open[0]!.scores, {}, "no answers yet");
   await t.ask("GET", "/runs/:run/quiz");
@@ -282,7 +282,7 @@ test("GET /quiz queues the love interests' answers once, never waits, and keeps 
   const scoring = t.calls.filter((entry) => isScoring(entry.messages));
   assert.equal(scoring.length, 1, "one call, however often the quiz is read meanwhile");
   const asked = statementsOf(scoring[0]!.messages);
-  assert.equal(asked.length, 68);
+  assert.equal(asked.length, 70);
   assert.ok(!asked.some((text) => QUIZ_STARTERS.find((statement) => statement.text === text)?.adult));
   assert.match(scoring[0]!.messages[0]!.content, /<statement>: <name> <score> \| <name> <score> \| …/u);
   assert.match(scoring[0]!.messages[1]!.content, /Kai \(he\/him\/his\)\nBIBLE: \{/u, "each love interest's bible");
@@ -302,10 +302,10 @@ test("NSFW Heat shows, sends and answers the 18+ statements, with each love inte
     bible: { ...unit.bible!, intimacy: { preferences: ["praise"], attractions: ["confidence"] } },
   }));
   const first = await t.ask("GET", "/runs/:run/quiz");
-  assert.equal(first.body.open.length, 100);
+  assert.equal(first.body.open.length, 106);
   await t.settle();
   const prompt = t.calls.find((entry) => isScoring(entry.messages))!.messages;
-  assert.equal(statementsOf(prompt).length, 100);
+  assert.equal(statementsOf(prompt).length, 106);
   assert.match(prompt[1]!.content, /Kai's tastes in sex and intimacy: into praise; drawn to confidence\./u);
   assert.doesNotMatch(prompt[1]!.content, /"intimacy":/u, "the tastes ride as their own line, never in the JSON");
 });
@@ -340,7 +340,7 @@ test("a newcomer's answers are written for them alone, for every statement alrea
     const second = t.calls.filter((entry) => isScoring(entry.messages))[1]!.messages;
     assert.match(second[1]!.content, /\nNoor \(he\/him\/his\)\nBIBLE:/u);
     assert.doesNotMatch(second[1]!.content, /\nKai \(he\/him\/his\)/u, "only who is missing answers");
-    assert.equal(statementsOf(second).length, 68);
+    assert.equal(statementsOf(second).length, 70);
     const after = await t.ask("GET", "/runs/:run/quiz");
     assert.equal(after.body.open[0]!.scores[NEW], 4);
     assert.equal(after.body.open[0]!.scores[KAI], 1, "an existing answer is never replaced");
@@ -352,7 +352,7 @@ test("a newcomer's answers are written for them alone, for every statement alrea
 test("a scoring reply that skips statements leaves them for QUIZ_RETRY_MS, never a call on every read", async (context) => {
   context.mock.timers.enable({ apis: ["Date"], now: 5_000_000 });
   // The first reply answers only the first half; the second, much later, answers the rest.
-  const half = (messages: Array<{ content: string }>) => answerAll(messages).split("\n").slice(0, 34).join("\n");
+  const half = (messages: Array<{ content: string }>) => answerAll(messages).split("\n").slice(0, 35).join("\n");
   const t = await quizWorld("r-quizskip-aaaaaa", {
     runKey: "",
     quizReply: inTurn(half, (messages) => answerAll(messages)),
@@ -363,14 +363,14 @@ test("a scoring reply that skips statements leaves them for QUIZ_RETRY_MS, never
   assert.equal(scoring().length, 1);
   const read = await t.ask("GET", "/runs/:run/quiz");
   assert.equal(read.body.scoring, false, "nothing is queued within the cool-down");
-  assert.equal(read.body.open.filter((statement) => Object.keys(statement.scores).length).length, 34);
+  assert.equal(read.body.open.filter((statement) => Object.keys(statement.scores).length).length, 35);
   await t.settle();
   assert.equal(scoring().length, 1, "no second call yet");
   context.mock.timers.tick(QUIZ_RETRY_MS + 1);
   await t.ask("GET", "/runs/:run/quiz");
   await t.settle();
   assert.equal(scoring().length, 2);
-  assert.equal(statementsOf(scoring()[1]!.messages).length, 34, "only what is still missing is asked");
+  assert.equal(statementsOf(scoring()[1]!.messages).length, 35, "only what is still missing is asked");
 });
 
 test("answers: the first is final; an unseen statement is a 404 and an answer outside 1–5 a 400", async () => {
@@ -492,7 +492,7 @@ test("opening a story from before the quiz queues its love interests' answers on
   await t.settle();
   assert.equal(scoring(), 1, "one call for every love interest");
   const quiz = await t.quiz();
-  assert.equal(Object.keys(quiz.scores).length, 68, "every statement an SFW story shows, answered by opening it");
+  assert.equal(Object.keys(quiz.scores).length, 70, "every statement an SFW story shows, answered by opening it");
   assert.deepEqual(quiz.scores.p01, { [KAI]: 1, [MIR]: 1, [SOL]: 1 });
   // The scores exist: opening it again queues nothing.
   await open();

@@ -4,7 +4,7 @@
 // ──────────────────────────────────────────────
 // Optional, as Who said what? is (C/screens/reader/WhoSaidWhat.tsx): one Play button, then a statement and a 1–5 scale
 // from strongly disagree to strongly agree. The answer is saved (POST /runs/:run/quiz/answer; the first is final) and
-// each love interest's own answer to it is revealed in a polite live region, with how alike the two of you are so far
+// each love interest's own answer to it is revealed in a polite live region, with how well the two of you match so far
 // (SH/quiz.ts quizAgreement), then Next statement. The quiz is read only once Play is pressed (GET /runs/:run/quiz,
 // which queues what it is missing in the background: their answers, or new statements once every one is answered),
 // and read again now and then while something it shows is still being written, or slowly while the statement on
@@ -22,7 +22,7 @@ import { Avatar } from "../../components/Avatar";
 import { runPath } from "../../hooks/use-reader";
 import { accentOf } from "../../lib/accent";
 import type { RunLiView } from "../../shared/api-types";
-import { QUIZ_SCALE, quizAgreement, type QuizScore, type QuizView } from "../../shared/quiz";
+import { QUIZ_SCALE, quizAgreement, quizComplements, type QuizScore, type QuizView } from "../../shared/quiz";
 
 /** How often the quiz is read again while their answers or new statements are being written. */
 const REFRESH_MS = 15_000;
@@ -210,23 +210,27 @@ export function PersonalityQuiz({ runKey, lis }: { runKey: string; lis: readonly
           <>
             <p className="of-quiz-you">{t("ui.otomeForge.quiz.you", { answer: scaleLabel(answer) })}</p>
             {answering.length ? (
-              <ul className="of-quiz-answers">
-                {answering.map((li) => {
-                  const theirs = statement.scores[li.id]!;
-                  const alike = quizAgreement(data.answered, li.id);
-                  return (
-                    <li key={li.id} className="of-quiz-answer">
-                      <Avatar name={li.name} url={li.portrait} accent={accentOf(li)} size={32} />
-                      <span className="of-quiz-answer-name">
-                        {t("ui.otomeForge.quiz.their", { name: li.name, answer: scaleLabel(theirs) })}
-                      </span>
-                      {alike !== null ? (
-                        <span className="of-quiz-alike">{t("ui.otomeForge.quiz.alike", { percent: alike })}</span>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className="of-quiz-answers">
+                  {answering.map((li) => {
+                    const theirs = statement.scores[li.id]!;
+                    const alike = quizAgreement(data.answered, li.id, [...data.answered, ...data.open]);
+                    const label = quizComplements(data.answered, li.id)
+                      ? "ui.otomeForge.quiz.compatible"
+                      : "ui.otomeForge.quiz.alike";
+                    return (
+                      <li key={li.id} className="of-quiz-answer">
+                        <Avatar name={li.name} url={li.portrait} accent={accentOf(li)} size={32} />
+                        <span className="of-quiz-answer-name">
+                          {t("ui.otomeForge.quiz.their", { name: li.name, answer: scaleLabel(theirs) })}
+                        </span>
+                        {alike !== null ? <span className="of-quiz-alike">{t(label, { percent: alike })}</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {statement.power ? <p className="of-hint">{t("ui.otomeForge.quiz.opposites")}</p> : null}
+              </>
             ) : (
               // Being written only while a call runs; one that failed waits out the cool-down (the slow read above).
               <p className="of-hint">
