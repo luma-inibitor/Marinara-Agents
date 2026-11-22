@@ -2,7 +2,7 @@
 // Otome Hearth: the personality quiz (#2174), played while a chapter is planned
 // ──────────────────────────────────────────────
 // The player answers statements on a 1–5 scale (strongly disagree to strongly agree) and then sees how each love
-// interest answered the same one (SH/quiz.ts counts how alike they are; no model call). The statements are the 100
+// interest answered the same one (SH/quiz.ts counts how well they match; no model call). The statements are the
 // starters (S/minigames/quiz-statements.ts) and those refills wrote since; one about sex or kinks (`adult`) is shown,
 // scored and written only while the story's Heat is NSFW (SH/content.ts intimacyOpen), and every statement a refill
 // writes under NSFW Heat counts as one (the model may leave its tag off), so none of them shows once Heat is SFW.
@@ -35,7 +35,10 @@ import { intimacyOpen } from "../../../../../client/src/features/otome-forge/sha
 import {
   QUIZ_REFILL,
   isQuizScore,
+  quizPowerOf,
+  type QuizPair,
   type QuizScore,
+  type QuizSide,
   type QuizStatementView,
   type QuizView,
 } from "../../../../../client/src/features/otome-forge/shared/quiz.js";
@@ -66,6 +69,7 @@ export interface QuizWritten {
   id: string;
   text: string;
   adult: boolean;
+  power?: QuizPair;
 }
 
 /** `${R}:quiz` */
@@ -76,6 +80,8 @@ export interface QuizDoc {
   scores: Record<string, Partial<Record<LiId, QuizScore>>>;
   /** The player's own answers, by statement id. */
   answers: Record<string, QuizScore>;
+  /** How many statements refills had written before they wrote power pairs; absent until the first such refill. */
+  pairsSince?: number;
 }
 
 const STATEMENT_ID = /^(?:[pilt]\d{2}|w[1-9]\d{0,4})$/;
@@ -92,8 +98,19 @@ export function normalizeQuiz(data: unknown): QuizDoc {
     const text = entry.text.trim();
     if (!/^w[1-9]\d{0,4}$/.test(entry.id) || !text || text.length > QUIZ_TEXT_MAX) continue;
     if (written.some((kept) => kept.id === entry.id)) continue;
-    written.push({ id: entry.id, text, adult: entry.adult === true });
+    const power =
+      isRecord(entry.power) &&
+      (entry.power.side === "lead" || entry.power.side === "yield") &&
+      typeof entry.power.pair === "string"
+        ? { side: entry.power.side as QuizSide, pair: entry.power.pair }
+        : undefined;
+    written.push({ id: entry.id, text, adult: entry.adult === true, ...(power ? { power } : {}) });
     if (written.length >= QUIZ_WRITTEN_MAX) break;
+  }
+  for (const entry of written) {
+    if (!entry.power) continue;
+    const other = written.find((kept) => kept.id === entry.power!.pair);
+    if (other?.power?.pair !== entry.id || other.power.side === entry.power.side) delete entry.power;
   }
   const scores: QuizDoc["scores"] = {};
   for (const [id, byLi] of Object.entries(isRecord(raw.scores) ? raw.scores : {})) {
@@ -106,7 +123,14 @@ export function normalizeQuiz(data: unknown): QuizDoc {
       ([id, score]) => STATEMENT_ID.test(id) && isQuizScore(score),
     ),
   ) as Record<string, QuizScore>;
-  return { version: 1, written, scores, answers };
+  const pairsSince =
+    typeof raw.pairsSince === "number" &&
+    Number.isInteger(raw.pairsSince) &&
+    raw.pairsSince >= 0 &&
+    raw.pairsSince <= written.length
+      ? raw.pairsSince
+      : undefined;
+  return { version: 1, written, scores, answers, ...(pairsSince !== undefined ? { pairsSince } : {}) };
 }
 
 export async function readQuiz(store: Pick<OtomeStore, "readDoc">, runId: string): Promise<QuizDoc> {
@@ -119,13 +143,26 @@ interface Statement {
   id: string;
   text: string;
   adult: boolean;
+  power?: QuizPair;
+  /** Written before refills wrote power pairs, so read by its wording. */
+  legacy?: boolean;
 }
 
 /** Every statement the player may see now, in the order they are asked: the starters, then what refills wrote. */
 function visibleStatements(run: Pick<Run, "world">, doc: QuizDoc): Statement[] {
   const adult = intimacyOpen(run.world.content);
-  return [...QUIZ_STARTERS, ...doc.written].filter((statement) => adult || !statement.adult);
+  const written = doc.written.map((statement, index) => ({
+    ...statement,
+    legacy: doc.pairsSince === undefined || index < doc.pairsSince,
+  }));
+  return [...QUIZ_STARTERS, ...written].filter((statement) => adult || !statement.adult);
 }
+
+const powerOf = (statement: Statement) => {
+  if (statement.power) return statement.power;
+  const legacy = statement.legacy ? quizPowerOf(statement.text) : null;
+  return legacy ? { side: legacy } : undefined;
+};
 
 /** The love interests who answer: in the story now, with a bible. */
 function answering(run: Pick<Run, "units" | "state">): Unit[] {
@@ -154,7 +191,14 @@ export function quizView(
       lis.flatMap((li) => (doc.scores[statement.id]?.[li] ? [[li, doc.scores[statement.id]![li]!]] : [])),
     );
     const answer = doc.answers[statement.id];
-    return { id: statement.id, text: statement.text, scores, ...(answer ? { answer } : {}) };
+    const power = powerOf(statement);
+    return {
+      id: statement.id,
+      text: statement.text,
+      scores,
+      ...(answer ? { answer } : {}),
+      ...(power ? { power } : {}),
+    };
   });
   return {
     open: views.filter((view) => !view.answer),
@@ -169,6 +213,8 @@ export interface QuizLine {
   statement: string;
   /** The statement carried an [18+] tag, anywhere before the scores. */
   adult: boolean;
+  /** A [lead N] or [yield N] tag: one half of power pair N. */
+  pair?: { side: QuizSide; key: number };
   scores: Array<{ name: string; score: number }>;
 }
 
@@ -180,6 +226,9 @@ const ADULT_TAG = /[[(]\s*18\s*\+\s*[\])]/u;
 const ADULT_TAGS = new RegExp(ADULT_TAG.source, "gu");
 /** The tag in its own emphasis ("**[18+]**", "*[18+]*"), which goes with it. */
 const WRAPPED_ADULT_TAGS = new RegExp(`(\\*{1,2})\\s*${ADULT_TAG.source}\\s*\\1`, "gu");
+const PAIR_TAG = /[[(]\s*(lead|yield)\s*(\d{1,3})\s*[\])]/iu;
+const PAIR_TAGS = new RegExp(PAIR_TAG.source, "giu");
+const WRAPPED_PAIR_TAGS = new RegExp(`(\\*{1,2})\\s*${PAIR_TAG.source}\\s*\\1`, "giu");
 
 /** One line of the reply, or null when it is not "<statement>: <name> <score> | …" (see the header). */
 export function parseQuizLine(raw: string): QuizLine | null {
@@ -202,9 +251,12 @@ export function parseQuizLine(raw: string): QuizLine | null {
     // the prose; it goes first, with its own emphasis and a stray leading colon, then a wrapper around the whole line
     // (only one nothing inside reopens, so "**this** and **that**" keeps its emphasis).
     const adult = ADULT_TAG.test(left);
+    const pairTag = PAIR_TAG.exec(left);
     let statement = left
       .replace(WRAPPED_ADULT_TAGS, "")
       .replace(ADULT_TAGS, "")
+      .replace(WRAPPED_PAIR_TAGS, "")
+      .replace(PAIR_TAGS, "")
       .replace(/^[\s:]+/u, "")
       .trim()
       .replace(/^\*\*\s*((?:(?!\*\*).)*?)\s*\*\*$/u, "$1")
@@ -218,6 +270,7 @@ export function parseQuizLine(raw: string): QuizLine | null {
     return {
       statement,
       adult,
+      ...(pairTag ? { pair: { side: pairTag[1]!.toLowerCase() as QuizSide, key: Number(pairTag[2]) } } : {}),
       scores: scores.map((match) => ({
         name: match![1]!.replace(/\*+/gu, "").trim(),
         score: Number(match![2]!.replace(",", ".")),
@@ -238,6 +291,7 @@ export const QuizLinesSchema = z.object({
     z.object({
       statement: z.string(),
       adult: z.boolean(),
+      pair: z.object({ side: z.enum(["lead", "yield"]), key: z.number() }).optional(),
       scores: z.array(z.object({ name: z.string(), score: z.number() })),
     }),
   ),
@@ -310,6 +364,37 @@ export function matchQuizScores(
   return matched;
 }
 
+export interface FreshStatement {
+  text: string;
+  adult: boolean;
+  scores: Partial<Record<LiId, QuizScore>>;
+  pair?: { side: QuizSide; key: number };
+}
+
+/**
+ * The written entries for `fresh`, numbered on from `start`: a power pair is kept only when exactly one half of each side
+ * with its key made it in; any other tag is dropped.
+ */
+export function writtenFrom(fresh: readonly FreshStatement[], start: number): QuizWritten[] {
+  const written: QuizWritten[] = fresh.map((statement, index) => ({
+    id: `w${start + index + 1}`,
+    text: statement.text,
+    adult: statement.adult,
+  }));
+  const halves = (key: number, side: QuizSide) =>
+    fresh.flatMap((statement, index) => (statement.pair?.key === key && statement.pair.side === side ? [index] : []));
+  for (const key of new Set(fresh.flatMap((statement) => (statement.pair ? [statement.pair.key] : [])))) {
+    const lead = halves(key, "lead");
+    const yields = halves(key, "yield");
+    if (lead.length !== 1 || yields.length !== 1) continue;
+    const [a, b] = [written[lead[0]!]!, written[yields[0]!]!];
+    if (a.adult !== b.adult) continue;
+    a.power = { side: "lead", pair: b.id };
+    b.power = { side: "yield", pair: a.id };
+  }
+  return written;
+}
+
 /**
  * The new statements a refill reply holds, with their scores: not one already asked or written twice (by its folded
  * text), not an [18+] one while Heat is SFW, never too long or too short; at most QUIZ_REFILL. While Heat is NSFW
@@ -320,16 +405,21 @@ export function newQuizStatements(
   asked: readonly Pick<Statement, "text">[],
   units: readonly Unit[],
   adultAllowed: boolean,
-): Array<{ text: string; adult: boolean; scores: Partial<Record<LiId, QuizScore>> }> {
+): FreshStatement[] {
   const seen = new Set(asked.map((statement) => keyOf(statement.text)));
-  const fresh: Array<{ text: string; adult: boolean; scores: Partial<Record<LiId, QuizScore>> }> = [];
+  const fresh: FreshStatement[] = [];
   for (const line of reply.lines) {
     const text = line.statement.replace(/\s+/gu, " ").trim();
     const key = keyOf(text);
     if (seen.has(key) || (line.adult && !adultAllowed)) continue;
     if (text.length > QUIZ_TEXT_MAX || (key.match(/[\p{L}\p{N}]/gu)?.length ?? 0) < 8) continue;
     seen.add(key);
-    fresh.push({ text, adult: line.adult || adultAllowed, scores: scoresOf(line, units) });
+    fresh.push({
+      text,
+      adult: line.adult || adultAllowed,
+      scores: scoresOf(line, units),
+      ...(line.pair ? { pair: line.pair } : {}),
+    });
     if (fresh.length >= QUIZ_REFILL) break;
   }
   return fresh;
@@ -447,14 +537,17 @@ export async function writeQuizRefill(
       0,
       QUIZ_WRITTEN_MAX - current.written.length,
     );
-    const written = [...current.written];
+    const added = writtenFrom(fresh, current.written.length);
     const scores = { ...current.scores };
-    for (const statement of fresh) {
-      const id = `w${written.length + 1}`;
-      written.push({ id, text: statement.text, adult: statement.adult });
-      if (Object.keys(statement.scores).length) scores[id] = statement.scores;
-    }
-    return { ...current, written, scores };
+    added.forEach((entry, index) => {
+      if (Object.keys(fresh[index]!.scores).length) scores[entry.id] = fresh[index]!.scores;
+    });
+    return {
+      ...current,
+      written: [...current.written, ...added],
+      scores,
+      pairsSince: current.pairsSince ?? current.written.length,
+    };
   });
 }
 

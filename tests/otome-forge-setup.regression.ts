@@ -476,7 +476,7 @@ test("once every bible is written, the personality quiz's answers are queued as 
     assert.match(quizCall.messages[1]!.content, new RegExp(`\n${name} \\(`, "u"));
   const quiz = (await t.store.readDoc(quizId(t.runId), normalizeQuiz)) ?? normalizeQuiz(undefined);
   assert.deepEqual(quiz.scores.p01, { [KAI]: 3, [MIR]: 3, [SOL]: 3 }, "the fake's answers (fakeQuizReply)");
-  assert.equal(Object.keys(quiz.scores).length, 68, "every statement an SFW story shows");
+  assert.equal(Object.keys(quiz.scores).length, 70, "every statement an SFW story shows");
 });
 
 test("a bible under 18 or in a school role gets one repair turn, then fails its step until Retry", async () => {
