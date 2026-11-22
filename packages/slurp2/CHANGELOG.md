@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.4.29-luma.7 — 2026-11-22
+
+- Fork build of Slurp 0.4.28 with these fixes: Half of locked posts keep their scene, and the spicy kind no longer repeats back to back. The overused-opener check reads every recent post, locked ones included. Two posts written close together no longer get the same details. A card's likes and hobbies reach every post, and section headings are no longer read as facts. Quiet days are one line in the recent-activity list, so real activity fills it. The card's core in every brief is about four times longer. Creators choose each automatic post's idea from their whole card, and a new setting sets the locked share. Pictures send references only for the people in them.
+
 ## 0.4.28 — 2026-11-19
 
 - Changed: the search fields on the Backstage Creators, Prompts and Continuity pages are now Marinara's own search field. Escape clears the text first, and a button clears it.

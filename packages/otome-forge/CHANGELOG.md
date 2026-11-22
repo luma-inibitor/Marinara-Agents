@@ -1,5 +1,9 @@
 # Otome Hearth release notes
 
+## 0.39.1-luma.6 — 2026-11-22
+
+- Fork build of Otome Hearth 0.39.0 with these fixes: Looks and portraits keep the installed base sprite as their likeness, looks follow a framing setting, each kind of picture can have its own connection, and expression edits follow how each love interest shows a feeling. The story reader's header no longer flickers each time the text advances on a phone. The personality quiz asks about who leads and who yields in pairs, and a love interest who takes charge now matches a player who likes to give it up. A new admin route swaps pictures in a story while the Engine runs, so hand-made sprites install without a restart. A story can give its stickers its own art style in place of the anime chibi look. A scene the narration model refuses or cuts short, such as a sex scene that stops at the threshold, is written again on a fallback connection set per story, and every scene logs which connection wrote it.
+
 ## 0.39.0 — 2026-11-20
 
 - Love interests can ask you on dates in Messages. **Settings → Connections → Date invitations each week** sets how often (0, the default, turns it off). The one you've spent the fewest scenes with lately asks. **Accept** lets you pick your look and a gift, then they choose where you go and what you do: three scenes, paid as any new date.

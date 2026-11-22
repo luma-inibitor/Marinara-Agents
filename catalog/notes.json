@@ -716,6 +716,12 @@
     "otome-forge": {
       "versions": [
         {
+          "version": "0.39.1-luma.6",
+          "date": "2026-11-22",
+          "notes": "- Fork build of Otome Hearth 0.39.0 with these fixes: Looks and portraits keep the installed base sprite as their likeness, looks follow a framing setting, each kind of picture can have its own connection, and expression edits follow how each love interest shows a feeling. The story reader's header no longer flickers each time the text advances on a phone. The personality quiz asks about who leads and who yields in pairs, and a love interest who takes charge now matches a player who likes to give it up. A new admin route swaps pictures in a story while the Engine runs, so hand-made sprites install without a restart. A story can give its stickers its own art style in place of the anime chibi look. A scene the narration model refuses or cuts short, such as a sex scene that stops at the threshold, is written again on a fallback connection set per story, and every scene logs which connection wrote it.",
+          "highlight": false
+        },
+        {
           "version": "0.39.0",
           "date": "2026-11-20",
           "notes": "- Love interests can ask you on dates in Messages. **Settings → Connections → Date invitations each week** sets how often (0, the default, turns it off). The one you've spent the fewest scenes with lately asks. **Accept** lets you pick your look and a gift, then they choose where you go and what you do: three scenes, paid as any new date.\n- What you write in Messages can hurt them, in their thread or in **Everyone**. A serious hurt is their grievance against you, as one from the story is, and they need space until you make it right in Routes. A milder one is remembered and costs 15 affection.\n- Setup's **Connections** step asks how often they write on their own: messages each day, group chat squabbles each day and date invitations each week.",
@@ -827,12 +833,6 @@
           "version": "0.34.12",
           "date": "2026-11-17",
           "notes": "- **Pickers show a card's title.** When two characters or two personas share a name, the setup's character and persona pickers, the newcomer picker on the Story screen and the card link in a love interest's bible now show each one's title / comment from Marinara Engine (such as \"Modern AU version\") under its name, so you can tell them apart. Searching the pickers finds a title too.",
-          "highlight": false
-        },
-        {
-          "version": "0.34.11",
-          "date": "2026-11-17",
-          "notes": "- **Open named sits under the hearts.** On the Story screen's **Between you**, a love interest with a bond story waiting showed its **Open** button beside his picture, which pushed his name to the middle and wrapped his hearts into three short rows. His row now lines up with the others: his name where theirs is, his ten hearts on one line, and the button on a row of its own under them.",
           "highlight": false
         }
       ]
@@ -1110,6 +1110,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.4.29-luma.7",
+          "date": "2026-11-22",
+          "notes": "- Fork build of Slurp 0.4.28 with these fixes: Half of locked posts keep their scene, and the spicy kind no longer repeats back to back. The overused-opener check reads every recent post, locked ones included. Two posts written close together no longer get the same details. A card's likes and hobbies reach every post, and section headings are no longer read as facts. Quiet days are one line in the recent-activity list, so real activity fills it. The card's core in every brief is about four times longer. Creators choose each automatic post's idea from their whole card, and a new setting sets the locked share. Pictures send references only for the people in them.",
+          "highlight": false
+        },
+        {
           "version": "0.4.28",
           "date": "2026-11-19",
           "notes": "- Changed: the search fields on the Backstage Creators, Prompts and Continuity pages are now Marinara's own search field. Escape clears the text first, and a button clears it.\n- Needs a Marinara Engine with capability API 1.832 or newer; an older Engine does not load this version.",
@@ -1221,12 +1227,6 @@
           "version": "0.4.10",
           "date": "2026-10-29",
           "notes": "- Turning on \"What your other Agents know\" now asks whether to turn on Long-Term Memory's \"Other Agents can read memories\" when that switch is off. \"Turn it on\" changes only that switch; \"Not now\" leaves it alone.",
-          "highlight": false
-        },
-        {
-          "version": "0.4.9",
-          "date": "2026-10-29",
-          "notes": "- Creators' posts and DM replies now use what Long-Term Memory remembers about them, through its recall service. A new \"Long-term memory\" choice in Backstage (Engine link) sets whether they get whole memories (the default) or only the parts that fit the post or message. It shows while \"What your other Agents know\" is on.\n- Backstage says when Long-Term Memory is missing, or is not sharing (\"Other Agents can read memories\" is off in its Memory Settings).\n- A DM brings in the persona's memories only when that persona's Slurp page uses Linked identity. A hinted or concealed page never does.\n- The Creator brief no longer reads Long-Term Memory's storage; the Character Tracker, World State and Persona Stats lines are unchanged.",
           "highlight": false
         }
       ]

@@ -541,7 +541,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.4.28",
+    version: "0.4.29-luma.7",
     minEngineVersion: SHARED_PARTS_BUILT_AGAINST.engineVersion,
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -948,7 +948,7 @@ const features = [
   },
   {
     id: "otome-forge",
-    version: "0.39.0",
+    version: "0.39.1-luma.6",
     minEngineVersion: "2.5.1",
     // The browser tab's openConnection prop and the debugMode field of /generate/raw arrived in capability API 1.386.
     capabilityApi: Object.freeze({ major: 1, minor: 386 }),
