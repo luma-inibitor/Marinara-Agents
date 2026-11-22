@@ -20,6 +20,7 @@
 // every name is one sticker. P17 lists only stickers that exist, and its parser (phone/replies.ts) reads either order.
 // ponytail: the chain and the set jobs' cool-down live in this process; a restart stops them and the next read of the
 // run starts them again (a stopped sticker waits for a tap). Upgrade path: a job document.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import { z } from "zod";
 import type {
   LiId,
@@ -542,7 +543,7 @@ function paintSticker(
     async check(): Promise<PaintCheck> {
       const run = await readRun(deps.store, runId);
       if (!run || !ours(owedStickers(run).find((entry) => entry.id === sticker.id)?.art)) return "gone";
-      if (run.world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(run.world.images, "sprites") !== connectionId) return "stopped";
       if (!options.consent && run.world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -604,7 +605,7 @@ export function queueStickers(deps: ArtDeps, runId: string, options: StickerQueu
     for (;;) {
       if (options.active && !options.active()) return;
       const run = await readRun(deps.store, runId);
-      const connectionId = run?.world.images.connectionId;
+      const connectionId = run ? imageConnectionFor(run.world.images, "sprites") : undefined;
       const next = run && connectionId ? owedStickers(run).find((sticker) => !sticker.art) : undefined;
       if (!run || !connectionId || !next) return;
       const release = startPaint(runId, ownerOf(next.id));
@@ -699,7 +700,7 @@ export async function paintStickerNow(
     async () => {
       const { run, sticker } = await read();
       if (sticker.art?.state === "ready" && !(painted && samePicture(sticker.art, first))) return sticker.art;
-      const connectionId = run.world.images.connectionId;
+      const connectionId = imageConnectionFor(run.world.images, "sprites");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const claimed = await saveArt(deps, runId, sticker, (current) =>

@@ -27,6 +27,7 @@
 // one paid image. It is kept in the Album (`state.album.cgs`, key `pair:<her look's id>`), so the state holds it once.
 // #2299: a tap repaints a kept one; the old portrait stays on screen while it paints and after a failure, and once the
 // new one is kept in its place the old image leaves the gallery.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type {
   AlbumCg,
   Outfit,
@@ -105,6 +106,8 @@ export const bannerArtOwner = (key: string): PaintOwner => `cg:banner/${key}`;
 const isFeatured = (item: Pick<Item, "id" | "banner">) => item.id === itemIdOf(item.banner, "f");
 const bannerPaints = (runId: string, item: Pick<Item, "id" | "banner">) =>
   isFeatured(item) && paintIsLive(runId, bannerArtOwner(item.banner));
+
+const itemImagePurpose = (item: Pick<Item, "kind">) => (isLookKind(item.kind) ? "sprites" : "scenes");
 
 /** An illustrated reward or a look. Moments and legacy Snapshots use their saved text without another planner call. */
 export const hasArt = (item: Pick<Item, "kind" | "cg" | "look" | "text" | "premise" | "title" | "place">) =>
@@ -391,7 +394,7 @@ async function paintItem(
         await save(banner.art);
         return "gone";
       }
-      if (world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(world.images, itemImagePurpose(item)) !== connectionId) return "stopped";
       if (!consent && world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -425,7 +428,7 @@ export async function queueItemArt(
   if (!hasArt(item) || item.art || bannerPaints(runId, item)) return itemArtView(runId, item);
   const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
   if (!world) throw notFound("Otome Hearth story");
-  const connectionId = world.images.connectionId;
+  const connectionId = imageConnectionFor(world.images, itemImagePurpose(item));
   if (!connectionId || !activeOf(deps)()) return null;
   const owner = itemArtOwner(item.id);
   const release = startPaint(runId, owner);
@@ -496,7 +499,7 @@ export async function paintItemNow(
       }
       const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
       if (!world) throw notFound("Otome Hearth story");
-      const connectionId = world.images.connectionId;
+      const connectionId = imageConnectionFor(world.images, itemImagePurpose(current));
       if (!connectionId) throw noConnection();
       const at = new Date().toISOString();
       const claimed = await updateIfChanged(deps.store, itemTarget(runId, id), normalizeItem, (current) =>
@@ -656,7 +659,7 @@ export async function paintPairNow(
       const already = await keptReady();
       if (already && !samePicture(already, first)) return already;
       // Refused before it waits in the lane: no set, a half not owned or not painted, no connection.
-      const connectionId = (await readPair(deps, runId, hers)).run.world.images.connectionId;
+      const connectionId = imageConnectionFor((await readPair(deps, runId, hers)).run.world.images, "scenes");
       if (!connectionId) throw noConnection();
       const images = imagesOf(deps);
       let painted: { image: PaintedImage; built: Awaited<ReturnType<typeof buildPair>> };
@@ -667,7 +670,7 @@ export async function paintPairNow(
           // once it leaves the queue behind other paints. Building waits for the looks' free cut-outs (0.36.7), as a
           // scene paint waits for its people's; a connection changed during that wait paints on the one it started on.
           const built = await buildPair(deps, runId, hers, edited);
-          if (built.run.world.images.connectionId !== connectionId) {
+          if (imageConnectionFor(built.run.world.images, "scenes") !== connectionId) {
             throw new OtomeForgeError(409, "The image connection changed before painting; try again.", "conflict");
           }
           const image = await images.generateBannerArt({

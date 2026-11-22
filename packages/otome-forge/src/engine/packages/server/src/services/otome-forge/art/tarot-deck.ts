@@ -21,6 +21,7 @@
 //   and role, so a likeness whose pictures fail to load stops before the paid call), or a card of nobody as a place.
 // - Tarot night shows a love interest the shared set and their own cards (deckView), the Album every card (albumCards).
 // Opening Tarot night or the Album, or reading the deck, never paints.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { LiId, Paint, Unit } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
 import {
   ARCANA,
@@ -197,7 +198,7 @@ function paintDeckCard(
       ]);
       const art = deck.cards[key]?.art;
       if (!world || art?.state !== "pending" || art.at !== at) return "gone";
-      if (world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(world.images, "scenes") !== connectionId) return "stopped";
       if (!consent && world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -232,7 +233,7 @@ export async function claimDeckCards(
   { debugMode, review }: ItemPaintOptions,
 ): Promise<string[]> {
   const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
-  const connectionId = world?.images.connectionId;
+  const connectionId = world ? imageConnectionFor(world.images, "scenes") : undefined;
   if (!world || !connectionId || !activeOf(deps)()) return [];
   const deck = await readDeck(deps.store, runId);
   const wanted = new Map(cards.map((card) => [deckKey(card, li), card] as const));
@@ -334,7 +335,7 @@ export async function paintTarotCardNow(
     },
     async () => {
       const { run } = await readEntry(deps, runId, li, card);
-      const connectionId = run.world.images.connectionId;
+      const connectionId = imageConnectionFor(run.world.images, "scenes");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const claimed = await updateIfChanged(deps.store, deckTarget(runId), normalizeDeck, (current) => {

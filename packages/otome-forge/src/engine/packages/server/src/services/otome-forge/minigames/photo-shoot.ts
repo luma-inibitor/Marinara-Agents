@@ -26,6 +26,7 @@
 //   paying for a stranger. Only the label `photo <id>` is ever logged.
 // - The Album lists the ready photos (newest first) apart from `cgs`, which Home's back layer reads, and Home tapes the
 //   newest with its love interest into his note. A photo can be deleted, except while it paints (409 `busy`).
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import { forgeSubjectReference, type ImageIdentitySubject } from "@forge-kit/image-avatar-references.mjs";
 import { z, type ZodType } from "zod";
 import type { Paint, World } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
@@ -201,7 +202,7 @@ interface PhotoLook {
 async function resolveSetup(deps: Pick<PhotoDeps, "store">, runId: string, setup: PhotoSetup) {
   const run = await readRun(deps.store, runId);
   if (!run) throw runNotFound();
-  const connectionId = run.world.images.connectionId;
+  const connectionId = imageConnectionFor(run.world.images, "scenes");
   if (!connectionId) throw noConnection();
   if (!isLiId(setup.li)) throw liNotFound();
   const unit = run.units.find((candidate) => candidate.id === setup.li && candidate.bible);
@@ -372,7 +373,7 @@ function paintPhoto(
       if (!ours(latest)) return "gone";
       const world: World | null = await deps.store.readDoc(worldId(runId), normalizeWorld);
       if (!world) return "gone";
-      return world.images.connectionId === connectionId ? "paint" : "stopped";
+      return imageConnectionFor(world.images, "scenes") === connectionId ? "paint" : "stopped";
     },
     async paint() {
       const photo = latest!;

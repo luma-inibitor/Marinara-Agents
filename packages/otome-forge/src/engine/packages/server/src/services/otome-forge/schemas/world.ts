@@ -5,6 +5,8 @@
 // reaches the client. `audio` and `places` (M2b) are read here so every normalized write keeps them; S/art and
 // S/audio write them. `phoneDaily` (#2044) is S/phone/daily.ts's quota, and stays on the server too.
 import { normalizeOtomeAudio } from "../../../../../client/src/features/otome-forge/shared/audio.js";
+import { LOOK_FRAMINGS } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
+import { IMAGE_PURPOSES } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import { z, type ZodType } from "zod";
 import type {
   Connections,
@@ -111,6 +113,10 @@ export function normalizeImages(data: unknown): ImageSettings {
       styleProfileId: z.string().optional(),
       style: z.string().max(IMAGE_STYLE_MAX).optional(),
       sideSprites: z.boolean().optional(),
+      lookFraming: z.enum(LOOK_FRAMINGS).optional(),
+      purposeConnections: z
+        .object(Object.fromEntries(IMAGE_PURPOSES.map((purpose) => [purpose, z.string().min(1).max(200).optional()])))
+        .optional(),
     },
     () => ({ connectionId: null, rating: DEFAULT_IMAGE_RATING, ask: false, expressions: true }),
     data,

@@ -12,6 +12,7 @@
 // paint: right before the paid call it checks the record is still the one this paint marked pending, and it saves the
 // result only onto that record, so a rewritten beat, a deleted run or a setting turned off never receives (or pays for)
 // an image meant for something else; an image nothing keeps is deleted from the gallery again.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { CapabilityRuntimeHost } from "@marinara-engine/shared";
 import type {
   LiId,
@@ -425,6 +426,7 @@ export async function readSubject(
         kind: "character",
         personaId: player.personaId,
         ...(player.portrait ? { portrait: player.portrait } : {}),
+        ...(player.art?.url ? { baseArt: player.art.url } : {}),
       },
     };
   }
@@ -441,6 +443,7 @@ export async function readSubject(
       kind: "character",
       ...(unit.cardId ? { cardId: unit.cardId } : {}),
       ...(unit.portrait ? { portrait: unit.portrait } : {}),
+      ...(unit.art?.url ? { baseArt: unit.art.url } : {}),
       outfits: unit.outfits,
     },
   };
@@ -503,7 +506,7 @@ export async function paintClaimed(
   { prompt, negativePrompt, debugMode }: Partial<ImagePrompt> & { debugMode: boolean },
 ): Promise<Paint> {
   const built = await lookPromptFor(deps, runId, owner, { prompt, negativePrompt }, debugMode);
-  const connectionId = built.world.images.connectionId;
+  const connectionId = imageConnectionFor(built.world.images, "sprites");
   if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
   await savePaint(deps, runId, owner, { state: "pending", at: new Date().toISOString() });
   const images = imagesOf(deps);

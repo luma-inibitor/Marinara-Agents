@@ -19,6 +19,7 @@
 // new one is cut out, and the replaced original leaves the gallery once the new one is saved.
 // ponytail: the chain lives in this process, as the stickers' does; a restart stops it and the next GET /play starts it
 // again (a stopped kitten waits for a tap). Upgrade path: a job document.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { Paint, World } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
 import type { KittenOwner, KittenView } from "../../../../../client/src/features/otome-forge/shared/kitty.js";
 import { OtomeForgeError } from "../http.js";
@@ -136,7 +137,7 @@ function paintKitten(
     async check(): Promise<PaintCheck> {
       const run = await readRun(deps.store, runId);
       if (!run || !ours(owedKittens(run).find((kitten) => kitten.owner === owner)?.art)) return "gone";
-      if (run.world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(run.world.images, "sprites") !== connectionId) return "stopped";
       if (!options.consent && run.world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -201,7 +202,7 @@ export function queueKittens(deps: ArtDeps, runId: string, options: KittenQueueO
     for (;;) {
       if (options.active && !options.active()) return;
       const run = await readRun(deps.store, runId);
-      const connectionId = run?.world.images.connectionId;
+      const connectionId = run ? imageConnectionFor(run.world.images, "sprites") : undefined;
       const next = run && connectionId ? owedKittens(run).find((kitten) => !kitten.art) : undefined;
       if (!run || !connectionId || !next || claimedHere.has(next.owner)) return;
       claimedHere.add(next.owner);
@@ -333,7 +334,7 @@ export async function paintKittenNow(
     },
     async () => {
       const { run } = await read();
-      const connectionId = run.world.images.connectionId;
+      const connectionId = imageConnectionFor(run.world.images, "sprites");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const claimed = await saveArt(deps, runId, owner, (current) => {
