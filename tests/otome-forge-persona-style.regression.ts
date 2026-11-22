@@ -105,7 +105,7 @@ test("a look keeps only its likeness from the reference, never the reference's h
   const look = lookPrompt({ ...mari, outfitLine: "plum knit cardigan, ochre pinafore", style: plain, matte: true });
   assert.match(
     look.prompt,
-    /\. If a reference picture of Mari is attached, use it only for Mari's face, hair and build: Mari wears only the outfit written here, never the clothes, hood, hat or accessories in that picture/,
+    /\. If a reference picture of Mari is attached, use it for Mari's face, hair, build and art style: Mari wears only the outfit written here, never the clothes, hood, hat or accessories in that picture/,
   );
   assert.match(
     look.negativePrompt,

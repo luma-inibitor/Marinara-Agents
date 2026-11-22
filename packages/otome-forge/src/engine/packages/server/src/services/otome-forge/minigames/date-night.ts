@@ -59,6 +59,7 @@
 //   prompts. Its record follows the paid-work rules (art/paint.ts): pending before the paid call, a failure saved and
 //   never repainted without another tap, a pending record with no live paint here read as stopped, and a ready one
 //   never painted again.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { ForgeMemoryJob } from "@forge-kit/story-memory.mjs";
 import { z, type ZodType } from "zod";
 import type {
@@ -922,7 +923,7 @@ export async function paintKeepsake(
 ): Promise<Paint> {
   const { run, plan, unit, people, units, references } = await keepsakeSubject(deps, runId, key);
   if (plan.keepsake.art?.state === "ready") return plan.keepsake.art;
-  const connectionId = run.world.images.connectionId;
+  const connectionId = imageConnectionFor(run.world.images, "scenes");
   if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
   const claim = paintKey(runId, key);
   if (painting.has(claim)) throw new OtomeForgeError(409, "This keepsake is already being painted.", "busy");

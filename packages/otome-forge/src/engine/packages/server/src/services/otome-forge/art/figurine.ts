@@ -16,6 +16,7 @@
 //   right after the paint and again by a Shop or Home read that finds none; until then the client shows the painted
 //   image only through its free display cleanup (C/components/LookImage.tsx), never with its chroma matte.
 // Opening the Shop or Home never paints one.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { LiId, Paint, Unit } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
 import type { FigurinePicture } from "../../../../../client/src/features/otome-forge/shared/shop.js";
 import { OtomeForgeError } from "../http.js";
@@ -145,7 +146,7 @@ async function paintFigurine(
         deps.store.readDoc(worldId(runId), normalizeWorld),
       ]);
       if (!unit || !world || unit.figurine?.state !== "pending" || unit.figurine.at !== at) return "gone";
-      if (world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(world.images, "sprites") !== connectionId) return "stopped";
       if (!consent && world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -179,7 +180,7 @@ export async function queueFigurineArt(
   { debugMode, review }: ItemPaintOptions,
 ): Promise<Unit | null> {
   const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
-  const connectionId = world?.images.connectionId;
+  const connectionId = world ? imageConnectionFor(world.images, "sprites") : undefined;
   if (!world || !connectionId || !activeOf(deps)()) return null;
   const release = startPaint(runId, figurineOwner(li));
   if (!release) return null;
@@ -235,7 +236,7 @@ export async function paintFigurineNow(
       }
       const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
       if (!world) throw notFound("Otome Hearth story");
-      const connectionId = world.images.connectionId;
+      const connectionId = imageConnectionFor(world.images, "sprites");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const pending: Paint = { state: "pending", at };

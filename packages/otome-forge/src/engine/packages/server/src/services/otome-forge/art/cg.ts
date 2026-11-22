@@ -16,6 +16,7 @@
 // shows it, so it is not painted (a paint still waiting in the lane stops). The beat writer calls queueScenePaints with
 // a beat once it is written, and startBeatCg (OtomeArt.prepareSceneCg) once it is served, awaiting only the CG's
 // record so the reader's first art read sees it pending or waiting; the first to write the record paints (startPaint).
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type {
   AlbumCg,
   Beat,
@@ -598,7 +599,7 @@ async function paintCg(
       if (!run || !paintsFor(current, writtenAt, at)) return "gone";
       // Eased off before its line: it can never be shown or unlocked, so nothing is paid for it.
       if (current!.easedOff && current!.easedOff.at < current!.cg!.at) return "stopped";
-      if (run.world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(run.world.images, "scenes") !== connectionId) return "stopped";
       if (!options.consent && run.world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -696,7 +697,7 @@ export async function startBeatCg(
   let painting: Promise<void> | null = null;
   try {
     const run = await readRun(deps.store, runId);
-    const connectionId = run?.world.images.connectionId;
+    const connectionId = run ? imageConnectionFor(run.world.images, "scenes") : undefined;
     if (!run || !connectionId) return idle;
     const wait = run.world.images.ask || options.review === true;
     const at = new Date().toISOString();
@@ -753,7 +754,7 @@ export async function paintCgNow(
     async () => {
       const run = await readRun(deps.store, runId);
       if (!run) throw runNotFound();
-      const connectionId = run.world.images.connectionId;
+      const connectionId = imageConnectionFor(run.world.images, "scenes");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const saved = await updateCg(deps, runId, beat, beat.written.at, (cg) => ({

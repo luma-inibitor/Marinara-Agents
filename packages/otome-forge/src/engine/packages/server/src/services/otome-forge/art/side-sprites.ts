@@ -17,6 +17,7 @@
 //   never pays twice); a `pending` record with no live paint in this process reads as `stopped`.
 // - The reader gets it with the scene's art (GET /runs/:run/art/scene `sides`, S/story/side-cast.ts sceneSides): its
 //   cut-out once ready, the painted image where cleanup failed, nothing while it is still being cut out.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type {
   Paint,
   Presentation,
@@ -193,7 +194,7 @@ async function paintSprite(
       ]);
       const art = sides?.people[key]?.art;
       if (!world || art?.state !== "pending" || art.at !== at) return "gone";
-      if (world.images.connectionId !== connectionId || !world.images.sideSprites) return "stopped";
+      if (imageConnectionFor(world.images, "sprites") !== connectionId || !world.images.sideSprites) return "stopped";
       if (!consent && world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -231,7 +232,7 @@ export async function queueSideSprite(
   { debugMode, review }: SideSpriteMode,
 ): Promise<SidePerson | null> {
   const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
-  const connectionId = world?.images.connectionId;
+  const connectionId = world ? imageConnectionFor(world.images, "sprites") : undefined;
   if (!world?.images.sideSprites || !connectionId || !activeOf(deps)()) return null;
   const release = startPaint(runId, sideOwner(key));
   if (!release) return null;
@@ -307,7 +308,7 @@ export async function paintSideNow(
       if (!person.cardId && !person.look) {
         throw new OtomeForgeError(409, `${person.name}'s look is not written yet.`, "conflict");
       }
-      const connectionId = world.images.connectionId;
+      const connectionId = imageConnectionFor(world.images, "sprites");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const claimed = await updateIfChanged(

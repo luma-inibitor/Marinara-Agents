@@ -24,6 +24,8 @@ export interface ImageSubject {
   cardId?: string;
   personaId?: string;
   portrait?: string;
+  /** Their base look as painted or installed, on its backdrop: the first likeness for their own looks and portrait. */
+  baseArt?: string;
   /** The last likeness the kit tries, after the card or persona avatar and `portrait` (cgSubjects: their outfit). */
   avatarPath?: string;
   /**
@@ -557,6 +559,10 @@ export function createImageClient({
   async function likeness(client: ImageClient, subject: Omit<ImageSubject, "kind">, method?: string) {
     const cardId = str(subject.cardId);
     const both = method === "generatePortrait" || method === "generateOutfit";
+    const base = both && !subject.avatarOnly ? forgeLocalAvatarPath(subject.baseArt) : "";
+    const baseImage = base ? await client.cardAvatarImage(base) : null;
+    if (baseImage?.base64 && /^image\//u.test(baseImage.mime))
+      return `data:${baseImage.mime};base64,${baseImage.base64}`;
     if (cardId && !subject.avatarOnly && !cardId.includes("..") && !/[\\/]/u.test(cardId)) {
       try {
         const sprites: unknown = await request(`/api/sprites/${encodeURIComponent(cardId)}`);

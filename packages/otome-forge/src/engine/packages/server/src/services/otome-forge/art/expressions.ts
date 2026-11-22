@@ -14,6 +14,7 @@
 // beat is served, queueScenePaints for a beat's places and CG once written and prepareSceneCg for a CG still without
 // a record once served (art/cg.ts), dispose on teardown, after which nothing more is paid for. queueStickers (#2044, art/stickers.ts) runs
 // each run's sticker chain from GET /runs/:run.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import { createForgeStoryExpressions, type ForgeStoryExpressions } from "@forge-kit/story-expressions-server.mjs";
 import type { Beat, Paint, Unit, World } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
 import { FACE_LOOKS, FACES, type Face } from "../../../../../client/src/features/otome-forge/shared/faces.js";
@@ -30,20 +31,22 @@ import { imagesOf, paintSlot, updateIfChanged, type ArtDeps } from "./paint.js";
 import { paintBeatPlaces, type PaintOptions } from "./places.js";
 import { type ImagePrompt, LOOK_SIZE, expressionPrompt } from "../prompts.js";
 import { queueStickers, type StickerQueueOptions } from "./stickers.js";
+import { ensureFaceNotes } from "./face-notes.js";
 
 export type ExpressionPrompts = Partial<Record<Face, ImagePrompt>>;
 
 /** Read-only preview and validation shared by explicit repaint and its prompt review. */
-export async function expressionPromptsFor(deps: ArtDeps, runId: string, li: string) {
-  const [world, unit] = await Promise.all([
+export async function expressionPromptsFor(deps: ArtDeps, runId: string, li: string, debugMode = false) {
+  const [world, stored] = await Promise.all([
     deps.store.readDoc(worldId(runId), normalizeWorld),
     deps.store.readDoc(unitId(runId, li), normalizeUnit),
   ]);
-  if (!world || !unit) throw new OtomeForgeError(404, "No such love interest.", "not-found");
+  if (!world || !stored) throw new OtomeForgeError(404, "No such love interest.", "not-found");
   if (!world.images.connectionId) throw new OtomeForgeError(503, "Choose an image connection first.", "no-connection");
   if (!world.images.expressions) throw new OtomeForgeError(409, "Turn expressions on first.", "conflict");
-  const base = baseOf(unit);
+  const base = baseOf(stored);
   if (!base || !engineArtPath(base)) throw new OtomeForgeError(409, "Paint this look first.", "conflict");
+  const unit = { ...stored, faceNotes: await ensureFaceNotes(deps, runId, li, { debugMode }) };
   const style = await worldStyle(imagesOf(deps), world.images);
   return {
     base,
@@ -135,13 +138,17 @@ export function createOtomeArt(deps: ArtDeps): OtomeArt {
         if (!world) throw new Error("the story was deleted");
         const style = await worldStyle(images, world.images);
         const unit = normalizeUnit(request.unit);
+        const edited = request.edited as Partial<ImagePrompt> | undefined;
+        const faceNotes = edited?.prompt?.trim()
+          ? unit.faceNotes
+          : await ensureFaceNotes(deps, runId, unit.id, { debugMode: request.debugMode === true });
         const { prompt, negativePrompt } = expressionPrompt({
-          unit,
+          unit: { ...unit, faceNotes },
           base: String(request.base ?? ""),
           face: request.expression as Face,
           world,
           style,
-          edited: request.edited as Partial<ImagePrompt> | undefined,
+          edited,
         });
         const image: GeneratedImage = await images.generateImage({
           connectionId: String(request.connectionId),
@@ -176,7 +183,7 @@ export function createOtomeArt(deps: ArtDeps): OtomeArt {
       readRun,
       images: (run) => imagesOfRun(run as ExpressionRun),
       async connection(run) {
-        const id = (run as ExpressionRun).world.images.connectionId;
+        const id = imageConnectionFor((run as ExpressionRun).world.images, "expressions");
         return id ? { id, provider: "image_generation", model: "" } : null;
       },
       client: () => client,
@@ -215,7 +222,7 @@ export function createOtomeArt(deps: ArtDeps): OtomeArt {
   return {
     async repaintExpressions(runId, li, options) {
       if (disposed) throw new OtomeForgeError(409, "The art service has stopped.", "conflict");
-      const preview = await expressionPromptsFor(deps, runId, li);
+      const preview = await expressionPromptsFor(deps, runId, li, options.debugMode);
       if (options.base !== undefined && options.base !== preview.base)
         throw new OtomeForgeError(409, "The current look changed. Review its expressions again.", "conflict");
       debugMode.set(runId, options.debugMode);
