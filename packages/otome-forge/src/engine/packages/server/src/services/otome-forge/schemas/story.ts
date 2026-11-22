@@ -388,7 +388,18 @@ export function normalizeBeat(data: unknown): Beat | null {
         .optional(),
       readThrough: z.number().int().min(0),
       easedOff: z.object({ at: z.number().int().min(0), veil: z.array(z.enum(LIMIT_IDS)).optional() }).optional(),
-      written: z.object({ at: z.string(), connectionId: z.string(), model: z.string() }),
+      written: z.object({
+        at: z.string(),
+        connectionId: z.string(),
+        model: z.string(),
+        fallback: z
+          .object({
+            reason: z.enum(["declined", "refusal", "filtered", "short-intimate", "choice-at-end"]),
+            from: z.string(),
+            used: z.boolean(),
+          })
+          .optional(),
+      }),
       rewrites: z.number().int().min(0),
       shown: z.literal(true).optional(),
       confrontation: ConfrontationSchema.optional(),

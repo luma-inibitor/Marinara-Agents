@@ -221,6 +221,7 @@ export function normalizeWorld(data: unknown): World {
       content: normalizeContent,
       images: normalizeImages,
       connections: normalizeConnections,
+      narrationFallback: z.string().min(1).max(CONNECTION_ID_MAX).optional(),
       forge: normalizeForge,
       audio: normalizeWorldAudio,
       places: normalizePlaces,

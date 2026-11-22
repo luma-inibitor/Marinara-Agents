@@ -123,6 +123,7 @@ import { countedNow, gateShut, healRupture, passGate } from "../state/stages.js"
 import { arcCovering, listArcs } from "./arc.js";
 import type { ChapterDeps } from "./chapters.js";
 import { noteSideSpeakers, type SideCastDeps } from "./side-cast.js";
+import { narrateScene } from "./narration-fallback.js";
 import {
   OWN_ANSWER_LABEL,
   type StoryContext,
@@ -1094,7 +1095,7 @@ async function generateBeat(
     ...(hapticsOn(run.world) ? { toys: deps.haptics?.devicesText() ?? "" } : {}),
   };
   let body: Omit<Beat, "key" | "i" | "kind" | "choiceCanon" | "applied" | "readThrough" | "written" | "rewrites">;
-  let written: { connectionId: string; model: string };
+  let written: Omit<Beat["written"], "at">;
   if (opponent) {
     // P12 (a Closer's P12c): the whole game in one call; its opening is the beat's segments.
     const climax = node.kind === "closer" ? "closer" : "confrontation";
@@ -1133,25 +1134,30 @@ async function generateBeat(
     };
     written = { connectionId, model };
   } else {
-    const { value, connectionId, model } = await generateJson(deps, {
-      runId,
-      job: "narration",
-      label: `beat/${key}/${i}`,
-      messages: beatMessages(input),
-      memory,
-      schema: BeatReplySchema,
-      normalize: (reply) => {
-        const beat = normalizeBeatReply(reply, context);
-        if (typeof beat === "string") return beat;
-        return (chapter.kind === "prologue" && prologueProblem(beat, units)) || reply;
+    const read = (reply: BeatReply) => normalizeBeatReply(reply, context) as NormalizedBeat;
+    const { value, connectionId, model, fallback } = await narrateScene(
+      deps,
+      {
+        runId,
+        job: "narration",
+        label: `beat/${key}/${i}`,
+        messages: beatMessages(input),
+        memory,
+        schema: BeatReplySchema,
+        normalize: (reply) => {
+          const beat = normalizeBeatReply(reply, context);
+          if (typeof beat === "string") return beat;
+          return (chapter.kind === "prologue" && prologueProblem(beat, units)) || reply;
+        },
+        maxTokens: 6000,
+        debugMode,
+        lane: "foreground",
+        signal,
       },
-      maxTokens: 6000,
-      debugMode,
-      lane: "foreground",
-      signal,
-    });
+      { world: run.world, node, last, read },
+    );
     signal?.throwIfAborted();
-    const scene = normalizeBeatReply(value, context) as NormalizedBeat;
+    const scene = read(value);
     body = {
       places: scene.places,
       segments: scene.segments,
@@ -1170,7 +1176,7 @@ async function generateBeat(
       musicMood: scene.musicMood,
       ...(scene.cg ? { cg: scene.cg } : {}),
     };
-    written = { connectionId, model };
+    written = { connectionId, model, ...(fallback ? { fallback } : {}) };
   }
   const beat: Beat = {
     key,

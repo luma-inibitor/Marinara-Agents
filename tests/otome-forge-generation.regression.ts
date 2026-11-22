@@ -132,6 +132,8 @@ test("a reply is parsed, checked by its schema and normalize, and gets exactly o
     value: { premise: "A masked ball." },
     connectionId: "conn-structured",
     model: "fake-model",
+    finishReason: "stop",
+    text: '{"premise":"A masked ball."}',
   });
   assert.equal(calls.length, 2);
   assert.equal(calls[0]!.connectionId, "conn-structured", "the job's own connection wins over narration");
