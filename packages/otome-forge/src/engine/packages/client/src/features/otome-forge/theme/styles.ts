@@ -1808,9 +1808,12 @@ ${R}[data-look="pearl"] .of-reader-vignette {
     linear-gradient(to top, rgb(120 70 100 / 0.12) 0%, transparent 40%);
 }
 /* The header: the way out, the chapter's title, and the tools. */
+/* A layer of its own for good: otherwise each line's face transition makes and drops one for it, and WebKit flashes
+   its scrim as it does. */
 ${R} .of-reader-head {
   position: relative; z-index: 3; display: flex; flex-direction: column; gap: 6px;
   padding: var(--of-reader-top, max(12px, env(safe-area-inset-top))) 12px 4px;
+  will-change: transform;
 }
 ${R} .of-reader-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 ${R} .of-reader-row--sub { align-items: flex-start; }
