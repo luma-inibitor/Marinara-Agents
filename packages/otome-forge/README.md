@@ -537,6 +537,28 @@ Otome Hearth's routes are privileged Engine routes. On the computer that runs Ma
 
 Signing in with the Engine's login is not enough yet, because package routes do not accept a signed-in browser.
 
+## Swapping in hand-made art
+
+`POST /api/otome-forge/runs/<run key>/admin/art-swap` replaces pictures in a story's saved documents while the Engine runs. It sits behind the same privileged gate as every Otome Hearth route, so send `X-Admin-Secret` and an `Origin` the Engine trusts.
+
+1. **Upload** each new image with `POST /api/global-gallery/upload`. Keep the `id` and `url` it returns.
+2. **Dry run** the swap with `"dryRun": true`. Nothing is written. The answer lists each document that would change and how many times each old URL appears in it, plus the warnings.
+3. **Swap** with the same body and no `dryRun`.
+4. **Prune** each old row under `replacedRefs` whose `heldBy` is empty, with `DELETE /api/global-gallery/<row id>`. The Engine refuses to delete a row that a document still holds.
+
+```sh
+curl -X POST "$ENGINE/api/otome-forge/runs/r-xxxx-xxxxxx/admin/art-swap" \
+  -H "X-Admin-Secret: $SECRET" -H "Origin: $ENGINE" -H "Content-Type: application/json" \
+  -d '{"dryRun": true, "docs": ["unit:li-name-ab12"], "swaps": [
+        {"from": {"url": "/api/global-gallery/file/OLD.png"},
+         "to": {"url": "/api/global-gallery/file/NEW.png", "ref": "global-gallery:NEW_ROW_ID"}}]}'
+```
+
+- **What changes:** every value equal to `from.url` becomes `to.url`, and so does every map key equal to it, as in `cutouts` and `expressions`. The ref saved with it (`ref` beside `url`, `portraitRef` beside `portrait`) becomes `to.ref`. `docs` limits the swap to those documents, given as `unit:<li>` or as full ids.
+- **Checks first:** each `to.ref` must name a gallery row whose file is `to.url`, and each `from.url` must appear in the story (or in `docs`). If any check fails, the answer is a 400 and nothing is written. Each document is written in one revision-checked save.
+- **Cut-outs:** a cut-out whose image is swapped is marked ready at the Engine's current cleanup revision, so it is not rebuilt. When you swap a look or portrait, swap its cut-out (the `url` inside `cutouts[<look url>]`) in the same call. Otherwise Home keeps the old cut-out, and the answer warns `cutout-unchanged`.
+- **Warnings** name what would still be redone on a later read: `cutout-stale` (below the current cleanup revision), `cutout-not-ready`, `cutout-missing` (the Engine cuts one out itself), and `faces-missing`, `faces-not-ready` or `faces-incomplete` for the worn look's face set.
+
 ## Gacha Forge
 
 Otome Hearth is a package of its own. It installs and plays without Gacha Forge, and the two can be installed side by side.

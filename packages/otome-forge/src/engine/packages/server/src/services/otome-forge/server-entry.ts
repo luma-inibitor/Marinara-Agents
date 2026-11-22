@@ -12,6 +12,7 @@ import { createHandle, type OtomeRouter, type RouteDeps } from "./http.js";
 import { INDEX_ID } from "./ids.js";
 import { createOtomeMemory } from "./memory/memory.js";
 import { createRecallIndex } from "./memory/recall-index.js";
+import { registerAdminRoutes } from "./routes/admin.js";
 import { registerAlbumRoutes } from "./routes/album.js";
 import { registerArcRoutes } from "./routes/arcs.js";
 import { registerArtRoutes } from "./routes/art.js";
@@ -103,6 +104,7 @@ export async function activate({ api }: ActivationContext) {
       registerQuizRoutes(router, deps);
       registerDateRoutes(router, deps);
       registerHapticsRoutes(router, deps);
+      registerAdminRoutes(router, deps);
     },
     { prefix: "/api/otome-forge" },
   );
