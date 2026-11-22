@@ -5156,11 +5156,15 @@ export function stickerSetMessages({
   unit,
   language,
   others,
+  stickerStyle,
 }: {
   unit: Pick<Unit, "name" | "pronouns" | "identityLine" | "outfitLine" | "bible">;
   language: string;
   others: ReadonlyArray<{ name: string; emotions: readonly string[] }>;
+  /** The run's `images.stickerStyle`; empty is the default 2D anime chibi. */
+  stickerStyle?: string;
 }): OtomeMessage[] {
+  const ownStyle = stickerStyle?.trim() ?? "";
   const bible = unit.bible;
   const look = [unit.identityLine || bible?.look.identityLine, unit.outfitLine || bible?.look.outfitLine]
     .map((line) => line?.trim())
@@ -5180,13 +5184,15 @@ export function stickerSetMessages({
       ].filter(Boolean)
     : [];
   const system = [
-    `You design the chat stickers of one love interest in an otome game: ${STICKERS_PER_LI} 2D anime chibi stickers of ${unit.name}, in the spirit of a game's character sticker sets (Genshin Impact's, for example). Each one is a reaction ${unit.name} would really send in a private chat, true to who they are.`,
+    ownStyle
+      ? `You design the chat stickers of one love interest in an otome game: ${STICKERS_PER_LI} stickers of ${unit.name}, in the spirit of a game's character sticker sets, all drawn in this style: ${ownStyle}. Each one is a reaction ${unit.name} would really send in a private chat, true to who they are.`
+      : `You design the chat stickers of one love interest in an otome game: ${STICKERS_PER_LI} 2D anime chibi stickers of ${unit.name}, in the spirit of a game's character sticker sets (Genshin Impact's, for example). Each one is a reaction ${unit.name} would really send in a private chat, true to who they are.`,
     'Reply with ONLY a JSON object: {"stickers": [{"emotion": "...", "label": "...", "look": "..."}]}',
     "FIELDS",
     `- stickers: exactly ${STICKERS_PER_LI}, ordered from the most guarded (the first, sent while the two barely know each other) to the closest (the last, sent once they are very close).`,
     "- emotion: one lowercase English word naming the reaction (for example smug, pensive, sulking, delighted); all different.",
     `- label: the sticker's caption, in ${language}, at most ${STICKER_LABEL_MAX} characters.`,
-    `- look: English, visual only, at most ${STICKER_LOOK_MAX} characters: the expression and pose of a chibi bust, with at most one small prop or symbol. No text or lettering.`,
+    `- look: English, visual only, at most ${STICKER_LOOK_MAX} characters: the expression and pose of a ${ownStyle ? "head and shoulders bust" : "chibi bust"}, with at most one small prop or symbol. No text or lettering.`,
     "RULES",
     `- Choose the reactions from ${unit.name}'s personality, manner and voice: the range ${unit.name}'s own sticker set would have, never a generic set.`,
     others.length
@@ -6455,6 +6461,8 @@ export const STICKER_SIZE = { width: 1024, height: 1024 } as const;
 // asks for one ("thick clean outline" read as that rim) and every one says not to draw it.
 export const STICKER_FRAMING =
   "2D anime chibi sticker, chibi bust, head and shoulders only, big head, expressive face, thick clean line art, flat cel shading, no white outline around the figure";
+/** What the cut-out needs from every sticker, kept after a run's own `images.stickerStyle`. */
+export const STICKER_CUT = "head and shoulders bust, head and shoulders only, no white outline around the figure";
 const STICKER_NEGATIVE =
   "text, letters, captions, logos, watermarks, frame, collage layouts, multiple characters, extra people, full body, scenery, busy background, white outline, white border, sticker border, die-cut border";
 
@@ -6464,8 +6472,8 @@ export interface StickerInput extends Omit<LookInput, "matte"> {
 }
 
 /**
- * A chat sticker of one person: the style, who they are, then the sticker's look, their outfit, the chibi framing on
- * the matte their look names least, and the look's rating and adult tags. An edited prompt keeps its wording with
+ * A chat sticker of one person: the style, who they are, then the sticker's look, their outfit, the chibi framing (or
+ * the run's sticker style and STICKER_CUT) on the matte their look names least, and the look's rating and adult tags. An edited prompt keeps its wording with
  * every required tag put back.
  */
 export function stickerPrompt(input: StickerInput, edited: Partial<ImagePrompt> = {}): ImagePrompt {
@@ -6478,6 +6486,9 @@ export function stickerPrompt(input: StickerInput, edited: Partial<ImagePrompt> 
   });
   const negative = requiredNegative(world, "clothed");
   const matte = lookMatte(input.outfitLine, input.identityLine);
+  const ownStyle = world.images.stickerStyle?.trim() ?? "";
+  // Looks designed under the default style begin "chibi bust".
+  const look = ownStyle ? input.look.replace(/\bchibi\s+/giu, "") : input.look;
   return finish(
     world,
     () => ({
@@ -6485,9 +6496,9 @@ export function stickerPrompt(input: StickerInput, edited: Partial<ImagePrompt> 
         style.styleText,
         input.identityLine.trim(),
         mergeTags(
-          input.look,
+          look,
           input.outfitLine,
-          STICKER_FRAMING,
+          ...(ownStyle ? [ownStyle, STICKER_CUT] : [STICKER_FRAMING]),
           `plain flat solid ${matte} background`,
           required,
           style.positiveTags,
