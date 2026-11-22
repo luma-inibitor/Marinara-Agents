@@ -11,3 +11,4 @@ patch/slurp-character-ideas # Creators choose each automatic post's idea from th
 patch/slurp-reference-scope # Pictures send references only for the people in them.
 patch/otome-art-reference # Looks and portraits keep the installed base sprite as their likeness, looks follow a framing setting, each kind of picture can have its own connection, and expression edits follow how each love interest shows a feeling.
 patch/otome-reader-head-layer # The story reader's header no longer flickers each time the text advances on a phone.
+patch/otome-quiz-pairing # The personality quiz asks about who leads and who yields in pairs, and a love interest who takes charge now matches a player who likes to give it up.
