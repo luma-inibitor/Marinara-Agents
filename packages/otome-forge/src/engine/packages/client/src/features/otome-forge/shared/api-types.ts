@@ -122,6 +122,8 @@ export interface ImageSettings {
   styleProfileId?: string;
   /** The player's own words for how every picture looks (art style, medium); they lead each image prompt. */
   style?: string;
+  /** How stickers are drawn, in place of the default 2D anime chibi; absent or "" keeps the default. */
+  stickerStyle?: string;
   /**
    * 0.20.0: a full-body sprite for each recurring side character (S/story/side-cast.ts), shown while they speak; absent
    * or false: none, and nothing is called or painted for them.

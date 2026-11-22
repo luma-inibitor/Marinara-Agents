@@ -431,7 +431,12 @@ export async function writeStickerSet(
     runId,
     job: "chat",
     label: "stickers",
-    messages: stickerSetMessages({ unit, language: run.world.language, others }),
+    messages: stickerSetMessages({
+      unit,
+      language: run.world.language,
+      others,
+      stickerStyle: run.world.images.stickerStyle,
+    }),
     schema: StickerSetReplySchema,
     normalize: (reply) => {
       const set = normalizeStickerSetReply(
