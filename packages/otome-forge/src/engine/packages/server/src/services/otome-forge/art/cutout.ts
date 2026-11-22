@@ -148,7 +148,7 @@ export function createCutoutClient({
 }
 
 let defaultClient: CutoutClient | null = null;
-const clientOf = (deps: CutoutDeps) => deps.cutouts ?? (defaultClient ??= createCutoutClient());
+export const clientOf = (deps: Pick<CutoutDeps, "cutouts">) => deps.cutouts ?? (defaultClient ??= createCutoutClient());
 
 export interface CutoutDeps {
   runtime: Pick<CapabilityRuntimeHost, "logger">;
