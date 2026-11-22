@@ -122,6 +122,9 @@ export interface GenerateJsonResult<T> {
   value: T;
   connectionId: string;
   model: string;
+  /** The accepted reply's finish reason and text, as the provider gave them. */
+  finishReason: string;
+  text: string;
 }
 
 /** The connection a job uses: its own, else narration's; null when the world names none. */
@@ -130,7 +133,7 @@ export function resolveConnectionId(world: Pick<World, "connections"> | null, jo
 }
 
 const REFUSAL =
-  /\b(?:I(?:'|’)?m (?:not able|unable)|I (?:can(?:no|'|’)?t|cannot|won(?:'|’)t|am unable|am not able)|I must decline)\b[^.]{0,120}\b(?:write|continue|help|assist|comply|create|provide|produce|generate|engage)\b|\bagainst (?:my|the) (?:guidelines|content policy|usage polic(?:y|ies))\b/i;
+  /\b(?:I(?:'|’)?m (?:not able|unable)|I (?:can(?:no|'|’)?t|cannot|won(?:'|’)t|am unable|am not able)|I must decline)\b[^.]{0,120}\b(?:write|continue|help|assist|comply|create|provide|produce|generate|engage|fulfill?)\b|\bagainst (?:my|the) (?:guidelines|content policy|usage polic(?:y|ies))\b/i;
 
 /** Finish reasons that mean the reply stopped at its token limit (the Engine maps most providers to "length"). */
 const CUT_OFF = new Set(["length", "max_tokens", "max_output_tokens"]);
@@ -167,7 +170,9 @@ export const fitSafety = (maxContext: number) => Math.max(512, Math.ceil(maxCont
 export const promptRoom = (maxContext: number, messages: readonly OtomeMessage[]) =>
   maxContext - fitSafety(maxContext) - estimateMessages(messages);
 
-type Attempt<T> = { ok: true; value: T } | { ok: false; declined: boolean; issues: string; content: string };
+type Attempt<T> =
+  | { ok: true; value: T; finishReason: string; text: string }
+  | { ok: false; declined: boolean; issues: string; content: string };
 
 function check<T extends object>(
   request: GenerateJsonRequest<T>,
@@ -208,7 +213,7 @@ function check<T extends object>(
   const normalized = request.normalize ? request.normalize(parsed.data) : parsed.data;
   if (normalized === null) return fail("the reply did not pass the content checks");
   if (typeof normalized === "string") return fail(normalized);
-  return { ok: true, value: normalized };
+  return { ok: true, value: normalized, finishReason, text };
 }
 
 async function resolveModel(deps: GenerationDeps, connectionId: string): Promise<CapabilityResolvedLanguageModel> {
@@ -339,7 +344,14 @@ export async function generateJson<T extends object>(
   };
 
   const first = await complete(messages, request.label);
-  if (first.ok) return { value: first.value, connectionId, model: model.model };
+  const accepted = (attempt: Extract<Attempt<T>, { ok: true }>): GenerateJsonResult<T> => ({
+    value: attempt.value,
+    connectionId,
+    model: model.model,
+    finishReason: attempt.finishReason,
+    text: attempt.text,
+  });
+  if (first.ok) return accepted(first);
 
   const shape = request.replyShape ?? "the JSON object";
   const note = `That reply did not match the required format: ${first.issues}. Reply again with ONLY ${shape}.`;
@@ -352,7 +364,7 @@ export async function generateJson<T extends object>(
     if (error instanceof OtomeForgeError && error.code === "capacity") return null;
     throw error;
   });
-  if (second?.ok) return { value: second.value, connectionId, model: model.model };
+  if (second?.ok) return accepted(second);
 
   if (first.declined && (!second || second.declined)) {
     throw new OtomeForgeError(422, `The model declined ${request.label}.`, "declined");

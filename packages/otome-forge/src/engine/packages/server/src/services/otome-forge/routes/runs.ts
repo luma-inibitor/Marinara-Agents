@@ -16,13 +16,16 @@
 //                                             someone new mid-story gets his forge steps (setup/forge.ts forgeCast)
 // POST /runs/:run/activate                 → {index}
 // POST /runs/:run/delete {confirmTitle}    → {index}; removes every `${R}:*` document and the run's gallery images
-// POST /runs/:run/settings {content?, images?, connections?, language?, dailyMessages?, groupSquabbles?, dateInvites?}
+// POST /runs/:run/settings {content?, images?, connections?, narrationFallback?, language?, dailyMessages?,
+//      groupSquabbles?, dateInvites?}
 //      → {world: WorldView}; with an image connection, each paint step the world lacks is added, waiting for the tap.
 //      dailyMessages and groupSquabbles are 0–24 and dateInvites 0–7 (Settings → Connections, S/phone/daily.ts,
 //      S/phone/group.ts, S/phone/invite.ts). A new
 //      `connections.embeddings` (Memory recall embeddings) must name a connection with an embedding model (400
 //      `no-embeddings`), and rebuilds long-term recall's index with it (S/memory/recall-index.ts). Turning
 //      images.sideSprites on starts the qualifying side characters' looks and sprites in the background.
+//      narrationFallback names the connection that writes a scene again after a soft refusal
+//      (S/story/narration-fallback.ts); it must be one this Engine resolves (400 `bad-request`), and null clears it.
 // GET  /runs/:run/lis/:li/bible?spoilers=1 → {bible}
 // POST /runs/:run/lis/:li/bible {bible}    → {bible}
 // POST /runs/:run/lis/:li/intimacy          → {intimacy: true}; writes his missing intimacy block only (1 call;
@@ -178,6 +181,7 @@ const SettingsBody = z.object({
     })
     .optional(),
   connections: ConnectionsSchema.optional(),
+  narrationFallback: z.string().trim().min(1).max(ID_MAX).nullable().optional(),
   language: z.string().min(1).max(LANGUAGE_MAX).optional(),
   writingStyle: z.string().optional(),
   bannedPhrases: z.string().max(OWN_BANNED_PHRASES_MAX).optional(),
@@ -532,6 +536,12 @@ export const registerRunRoutes: RegisterRoutes = (router, deps) => {
           "no-embeddings",
         );
       }
+      if (body.narrationFallback) {
+        const id = body.narrationFallback;
+        await runtime.languageModels.resolveForRequest({ connectionId: id }).catch(() => {
+          throw badRequest(`No connection ${id} for the narration fallback.`);
+        });
+      }
       const ageGate = (await readIndex(store)).ageGate !== null;
       const at = new Date().toISOString();
       // #2147: whose look is Engine art, so the paint steps a connection adds are done for them (S/setup/forge.ts).
@@ -552,8 +562,12 @@ export const registerRunRoutes: RegisterRoutes = (router, deps) => {
         sideSpritesOn = !!images.sideSprites && !current.images.sideSprites;
         const from = { ...current.content, imageRating: current.images.rating };
         if (!ageGate && raisesGatedSetting(from, { ...content, imageRating: images.rating })) throw ageGateNeeded();
+        const { narrationFallback: _fallback, ...rest } = current;
+        const narrationFallback =
+          body.narrationFallback === undefined ? current.narrationFallback : body.narrationFallback;
         return {
-          ...current,
+          ...rest,
+          ...(narrationFallback ? { narrationFallback } : {}),
           language: body.language?.trim() || current.language,
           writingStyle: body.writingStyle !== undefined ? body.writingStyle.trim() : current.writingStyle,
           bannedPhrases: body.bannedPhrases !== undefined ? body.bannedPhrases.trim() : current.bannedPhrases,
