@@ -18,6 +18,7 @@ import type {
   StickerSet,
   Unit,
   BibleBond,
+  FaceNotes,
 } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
 import { STICKER_EMOTION, STICKERS_PER_LI } from "../../../../../client/src/features/otome-forge/shared/stickers.js";
 import { FACES } from "../../../../../client/src/features/otome-forge/shared/faces.js";
@@ -319,6 +320,19 @@ const defaultUnit = (): Unit => ({
   cutouts: {},
 });
 
+export const FACE_NOTE_MAX = 600;
+
+const FaceNotesSchema: ZodType<FaceNotes> = z.object({
+  restraint: z.string().max(FACE_NOTE_MAX),
+  lines: z.object(
+    Object.fromEntries(FACES.map((face) => [face, z.string().min(1).max(FACE_NOTE_MAX)])) as Record<
+      (typeof FACES)[number],
+      z.ZodString
+    >,
+  ),
+  at: z.string(),
+});
+
 export function normalizeUnit(data: unknown): Unit {
   const unit = readFields<Unit>(
     {
@@ -351,6 +365,7 @@ export function normalizeUnit(data: unknown): Unit {
       stickers: normalizeStickerSet,
       // 0.35.0: absent until GET /play is read with images on (S/art/kittens.ts).
       kitten: PaintSchema.optional(),
+      faceNotes: FaceNotesSchema.optional(),
     },
     defaultUnit,
     isRecord(data) ? data : undefined,

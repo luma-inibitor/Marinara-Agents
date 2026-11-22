@@ -35,7 +35,12 @@
 // image rating, or picking Dark romance, needs it (403 `age-gate`), lowering never does, and every stored content goes
 // through enforceContent, so a limit that cannot apply is always a Line.
 import { z } from "zod";
-import type { Presentation, Unit } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
+import {
+  LOOK_FRAMINGS,
+  type Presentation,
+  type Unit,
+} from "../../../../../client/src/features/otome-forge/shared/api-types.js";
+import { IMAGE_PURPOSES } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import { LIS_MAX, LIS_MIN } from "../../../../../client/src/features/otome-forge/shared/cast.js";
 import { ARCHETYPE_IDS } from "../../../../../client/src/features/otome-forge/shared/archetypes.js";
 import { OWN_BANNED_PHRASES_MAX } from "../../../../../client/src/features/otome-forge/shared/banned-phrases.js";
@@ -175,6 +180,10 @@ const SettingsBody = z.object({
       styleProfileId: z.string().max(200).optional(),
       style: ImageStyleSchema.optional(),
       sideSprites: z.boolean().optional(),
+      lookFraming: z.enum(LOOK_FRAMINGS).optional(),
+      purposeConnections: z
+        .object(Object.fromEntries(IMAGE_PURPOSES.map((purpose) => [purpose, z.string().min(1).max(200).optional()])))
+        .optional(),
     })
     .optional(),
   connections: ConnectionsSchema.optional(),

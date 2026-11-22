@@ -14,6 +14,7 @@
 // ponytail: the painting a background replaces is kept on the place (`painted`) and leaves the gallery only with the
 // story, so a stray tap in the picker never loses a paid image; nothing shows it again yet. The upgrade path is a
 // "Your painting" tile in the picker that sets it back.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { Paint, PlaceArt, World } from "../../../../../client/src/features/otome-forge/shared/api-types.js";
 import { placeKey } from "../../../../../client/src/features/otome-forge/shared/places.js";
 import { runForeground } from "../generation.js";
@@ -167,7 +168,7 @@ export async function paintBeatPlaces(
           claimed = planned?.paints ?? [];
           return planned ? { ...current, places: planned.places } : undefined;
         });
-        connectionId = result?.value.images.connectionId ?? "";
+        connectionId = (result ? imageConnectionFor(result.value.images, "scenes") : undefined) ?? "";
         if (!result?.changed || !connectionId) claimed = [];
       }
     });
@@ -234,7 +235,7 @@ async function paintPlace(
     async check(): Promise<PaintCheck> {
       latest = await deps.store.readDoc(worldId(runId), normalizeWorld);
       if (!latest || !ours(latest)) return "gone";
-      if (latest.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(latest.images, "scenes") !== connectionId) return "stopped";
       // An automatic paint waits for the tap once Ask before painting is turned on.
       if (!options.consent && latest.images.ask) return "waiting-consent";
       return "paint";
@@ -307,14 +308,14 @@ export async function paintPlaceNow(
       if (!world) throw new OtomeForgeError(404, "No such Otome Hearth story.", "not-found");
       if (!world.places[key]) throw notFound();
       if (!world.places[key].tags.trim()) throw untagged();
-      const connectionId = world.images.connectionId;
+      const connectionId = imageConnectionFor(world.images, "scenes");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const claim = await updateIfChanged(deps.store, worldTarget(runId), normalizeWorld, (current) => {
         const place = current.places[key];
         if (!place) throw notFound();
         if (!place.tags.trim()) throw untagged();
-        return current.images.connectionId === connectionId
+        return imageConnectionFor(current.images, "scenes") === connectionId
           ? { ...current, places: { ...current.places, [key]: { ...place, art: repainting(place.art, at) } } }
           : undefined;
       });

@@ -173,6 +173,7 @@ import type {
   StoryArc,
   Unit,
   World,
+  LookFraming,
 } from "../../../../client/src/features/otome-forge/shared/api-types.js";
 import { ARCHETYPES, isArchetypeId } from "../../../../client/src/features/otome-forge/shared/archetypes.js";
 import {
@@ -5993,8 +5994,13 @@ export const LOOK_SIZE = { width: 832, height: 1216 } as const;
 /** CGs and places (M2b). */
 export const SCENE_SIZE = { width: 768, height: 1344 } as const;
 
-const LOOK_POSE = "full body, standing, neutral pose";
-export const LOOK_FRAMING = `${LOOK_POSE}, plain flat mid-grey background`;
+const LOOK_POSES: Record<LookFraming, string> = {
+  "full-body": "full body, standing, neutral pose",
+  "thigh-up": "shown from mid-thigh up, head near the top of the frame, no knees or feet, standing, relaxed pose",
+  "waist-up": "shown from the waist up, head near the top of the frame, standing, relaxed pose",
+};
+const lookPose = (world?: Pick<World, "images">) => LOOK_POSES[world?.images.lookFraming ?? "full-body"];
+export const LOOK_FRAMING = `${LOOK_POSES["full-body"]}, plain flat mid-grey background`;
 
 /**
  * The Engine's sprite mattes (sprite-background.service.ts selectSpriteChromaMatte): the one whose colour the look
@@ -6036,10 +6042,12 @@ export function lookMatte(outfit: string, identity = ""): string {
 }
 
 /** A generated look on its selected chroma matte; callers can retain legacy mid-grey framing by omitting matte. */
-export function lookFraming(input: Pick<LookInput, "identityLine" | "outfitLine" | "matte">): string {
-  if (!input.matte) return LOOK_FRAMING;
+export function lookFraming(
+  input: Pick<LookInput, "identityLine" | "outfitLine" | "matte"> & { world?: Pick<World, "images"> },
+): string {
+  if (!input.matte) return `${lookPose(input.world)}, plain flat mid-grey background`;
   const matte = lookMatte(input.outfitLine, input.identityLine);
-  return `${LOOK_POSE}, plain flat solid ${matte} background`;
+  return `${lookPose(input.world)}, plain flat solid ${matte} background`;
 }
 
 /** Headwear an outfit line can name. */
@@ -6057,7 +6065,7 @@ function lookReferenceNote(input: Pick<LookInput, "name" | "outfitLine" | "style
   if (!input.outfitLine.trim() || input.style.tagged === true) return "";
   const name = input.name.trim() || "this person";
   return sentence(
-    `If a reference picture of ${name} is attached, use it only for ${name}'s face, hair and build: ${name} wears only the outfit written here, never the clothes, hood, hat or accessories in that picture, and never its pose, framing or background`,
+    `If a reference picture of ${name} is attached, use it for ${name}'s face, hair, build and art style: ${name} wears only the outfit written here, never the clothes, hood, hat or accessories in that picture, and never its pose or background`,
   );
 }
 
@@ -6065,6 +6073,10 @@ function lookReferenceNote(input: Pick<LookInput, "name" | "outfitLine" | "style
 const MATTE_NEGATIVE = "cast shadow, floor shadow, gradient background, colour spill";
 const LOOK_NEGATIVE =
   "text, captions, logos, watermarks, borders, UI, collage layouts, duplicate faces, extra people, cropped-off heads, cropped feet, busy background, scenery";
+const lookNegative = (world: Pick<World, "images">) =>
+  (world.images.lookFraming ?? "full-body") === "full-body"
+    ? LOOK_NEGATIVE
+    : LOOK_NEGATIVE.replace("cropped feet, ", "");
 /** Kept on every image, whatever the settings or the player's edits. */
 const ADULT_NEGATIVE = "child, childlike, minor, underage, school uniform";
 /** Explicit story CGs retain these additional adult exclusions. */
@@ -6179,7 +6191,7 @@ export function lookPrompt(input: LookInput, edited: Partial<ImagePrompt> = {}):
   const bareHead = input.outfitLine.trim() && !HEADWEAR.test(input.outfitLine) ? REFERENCE_HEADWEAR_NEGATIVE : "";
   const negativePrompt = edited.negativePrompt?.trim()
     ? withTags(edited.negativePrompt, negative)
-    : mergeTags(LOOK_NEGATIVE, input.matte ? MATTE_NEGATIVE : "", bareHead, negative, style.negativeTags);
+    : mergeTags(lookNegative(world), input.matte ? MATTE_NEGATIVE : "", bareHead, negative, style.negativeTags);
   return { prompt: adultsOnly(world, prompt), negativePrompt };
 }
 
@@ -6394,9 +6406,12 @@ export function keepsakePrompt(input: KeepsakeInput, edited: Partial<ImagePrompt
   return cgPrompt({ ...input, use: "cg", framing: `${count}, ${KEEPSAKE_FRAMING}` }, edited);
 }
 
+const FACE_GUARD =
+  "Keep it restrained but clearly visible even when the picture is shown small. No tears, no bared teeth, no cartoon effects. Do not crop, zoom or change the image size.";
+
 export interface ExpressionInput {
   /** The love interest as stored: his name, identity and outfit lines, and his bible's presentation. */
-  unit: Pick<Unit, "name" | "identityLine" | "outfitLine" | "portrait" | "outfits" | "bible">;
+  unit: Pick<Unit, "name" | "identityLine" | "outfitLine" | "portrait" | "outfits" | "bible" | "faceNotes">;
   /** The image the face is painted onto (his worn look, or his portrait). */
   base: string;
   face: Face;
@@ -6424,11 +6439,16 @@ export function expressionPrompt(input: ExpressionInput): ImagePrompt {
   const expressionUnit = unit.identityLine.trim()
     ? unit
     : { ...unit, identityLine: unit.bible?.look.identityLine ?? "" };
+  const notes = unit.faceNotes;
+  const looks = notes
+    ? { ...FACE_LOOKS, [input.face]: [notes.lines[input.face], FACE_LOOKS[input.face][1]] as [string, string] }
+    : FACE_LOOKS;
   const { prompt } = forgeStoryExpressionPrompt(expressionUnit, input.base, input.face, profile, {
     tagged,
-    looks: FACE_LOOKS,
+    looks,
   });
-  const prose = sentence(input.edited?.prompt ?? prompt);
+  const own = notes && !tagged ? [sentence(notes.restraint), FACE_GUARD].filter(Boolean).join(" ") : "";
+  const prose = sentence(input.edited?.prompt ?? (own ? `${sentence(prompt)} ${own}` : prompt));
   const safetyTail = sentence(required);
   const hasSafetyTail =
     prose === safetyTail || (prose.endsWith(safetyTail) && /[.!?…]\s+$/u.test(prose.slice(0, -safetyTail.length)));
@@ -6445,6 +6465,65 @@ export function expressionPrompt(input: ExpressionInput): ImagePrompt {
       input.edited?.negativePrompt ?? "",
     ),
   };
+}
+
+export interface FaceNotesInput {
+  world: Pick<World, "content" | "images" | "setting" | "premise">;
+  unit: Pick<Unit, "name" | "identityLine" | "bible">;
+}
+
+/** How one love interest shows each of the five faces, for their expression edits (S/art/face-notes.ts). */
+export function faceNotesMessages({ world, unit }: FaceNotesInput): OtomeMessage[] {
+  const name = unit.name;
+  const bible = unit.bible;
+  const shape = `{"restraint": "...", ${FACES.map((face) => `"${face}": "..."`).join(", ")}}`;
+  const system = [
+    `You write how ${name}, a love interest of an otome visual novel, shows five feelings on their face, for an image model that edits one illustration of them into each expression.`,
+    "Reply with ONLY a JSON object of this shape:",
+    shape,
+    "FIELDS",
+    `- restraint: one sentence on how much ${name}'s face shows at all, from who they are (a guarded, disciplined person shows little; an open one more).`,
+    `- ${FACES.join(", ")}: each a noun phrase starting with "a" or "an" that names the feeling the way ${name} would have it, then a colon, then what the brows, eyes, mouth and jaw do. Example of the form only: "a rare, unguarded tender look: the heavy brow eases, the eyes soften and hold the viewer, the corners of the closed mouth lift into a very small, reluctant smile".`,
+    "RULES",
+    `- In character: how this person would show it, given their mask, their tells and who they are underneath, not a generic expression. A cold person's anger may be quiet; a flustered one may refuse to show it.`,
+    "- Restrained but visible when the picture is small. Face only: no pose, hands, clothes, background, tears, bared teeth or cartoon effects.",
+    "- English only, visual only: no names, story or dialogue.",
+    "",
+    otomeContentContract({ world, lis: [{ name }], kind: "planner" }),
+  ].join("\n");
+  const person = bible
+    ? JSON.stringify({
+        presentation: bible.look.presentation,
+        looks: unit.identityLine.trim() || bible.look.identityLine,
+        publicFace: bible.publicFace,
+        archetype: bible.archetype,
+        mask: bible.mask,
+        trueSelf: bible.trueSelf,
+        flaws: bible.flaws,
+        virtues: bible.virtues,
+        fear: bible.fear,
+        voice: {
+          register: bible.voice.register,
+          careLanguage: bible.voice.careLanguage,
+          angerStyle: bible.voice.angerStyle,
+          samples: bible.voice.samples,
+        },
+      })
+    : unit.identityLine;
+  const user = [
+    "THE SETTING",
+    world.setting.trim() || world.premise.trim(),
+    "",
+    name.toUpperCase(),
+    person,
+    "",
+    `Write how ${name} shows each face now.`,
+    otomeContractReminder("planner"),
+  ].join("\n");
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
 }
 
 // ── #2044: chat stickers ──

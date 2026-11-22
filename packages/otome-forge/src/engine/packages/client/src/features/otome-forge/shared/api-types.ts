@@ -8,6 +8,7 @@ import type { ContentSettings, ImageRating, LimitId } from "./content";
 import type { DatePlan, DateScore } from "./dates";
 import type { Prestige, PrestigeKind } from "./economy";
 import type { Face, MusicMood } from "./faces";
+import type { ImagePurpose } from "./image-purpose";
 import type { ClawRound } from "./claw";
 import type { KittyRound } from "./kitty";
 import type { ReadHimPaid } from "./read-him";
@@ -126,7 +127,14 @@ export interface ImageSettings {
    * or false: none, and nothing is called or painted for them.
    */
   sideSprites?: boolean;
+  /** How much of a person a look or base portrait shows; absent is full body. */
+  lookFraming?: LookFraming;
+  /** A connection per kind of picture (SH/image-purpose.ts); a purpose left out uses `connectionId`. */
+  purposeConnections?: Partial<Record<ImagePurpose, string>>;
 }
+
+export const LOOK_FRAMINGS = ["full-body", "thigh-up", "waist-up"] as const;
+export type LookFraming = (typeof LOOK_FRAMINGS)[number];
 
 export type ForgeStepState = "pending" | "running" | "done" | "failed" | "waiting-consent";
 /** Step ids: `world-plan`, `bible:<li>`, `paint:<li>`, `paint:player`. */
@@ -326,6 +334,12 @@ export interface Player {
   kitten?: Paint;
 }
 
+export interface FaceNotes {
+  restraint: string;
+  lines: Record<Face, string>;
+  at: string;
+}
+
 export type ArcStageKey = "1" | "2" | "3" | "4" | "5" | "6";
 export type RevealStage = 2 | 3 | 4 | 5 | 6;
 export type ClawCheat = "steady" | "nudge" | "extra" | "freeze" | "calculate";
@@ -450,6 +464,8 @@ export interface Unit {
   stickers?: StickerSet;
   /** 0.35.0: their Kitty Cards kitten's paint (S/art/kittens.ts), claimed once GET /play is read with images on. */
   kitten?: Paint;
+  /** How this person shows each face, written once from the bible (S/art/face-notes.ts) for their expression edits. */
+  faceNotes?: FaceNotes;
 }
 
 /**
@@ -1796,7 +1812,18 @@ export interface SetupInput {
 export interface SettingsInput {
   content?: ContentSettings;
   images?: Partial<
-    Pick<ImageSettings, "connectionId" | "rating" | "ask" | "expressions" | "styleProfileId" | "style" | "sideSprites">
+    Pick<
+      ImageSettings,
+      | "connectionId"
+      | "rating"
+      | "ask"
+      | "expressions"
+      | "styleProfileId"
+      | "style"
+      | "sideSprites"
+      | "lookFraming"
+      | "purposeConnections"
+    >
   >;
   connections?: Connections;
   language?: string;

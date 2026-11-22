@@ -22,6 +22,7 @@
 // interest], so only that love interest recalls it (S/memory/sources.ts).
 // The view shows a look's art, and a wardrobe banner's, as its wearer's saved cut-out once ready (`cut` says so) and
 // queues the missing ones, free, as Home does (S/art/cutout.ts viewCutouts); the client cleans the rest meanwhile.
+import { imageConnectionFor } from "../../../../../client/src/features/otome-forge/shared/image-purpose.js";
 import type { ForgeMemorySource } from "@forge-kit/story-memory.mjs";
 import { forgeDayKey } from "@forge-kit/time-zone-server.mjs";
 import type {
@@ -503,7 +504,7 @@ async function createBanner(
   const plan = normalizeBannerPlan(value, context) as BannerPlan;
   const at = new Date().toISOString();
   const { five, four, three } = itemsOf(key, kind, plan, featured, partner?.id, at);
-  const imageConnection = run.world.images.connectionId;
+  const imageConnection = imageConnectionFor(run.world.images, "scenes");
   const wait = run.world.images.ask || options.review;
   const banner: Banner = {
     key,
@@ -793,7 +794,7 @@ function paintBanner(
         await save(featured.art);
         return "gone";
       }
-      if (world.images.connectionId !== connectionId) return "stopped";
+      if (imageConnectionFor(world.images, "scenes") !== connectionId) return "stopped";
       if (!options.consent && world.images.ask) return "waiting-consent";
       return "paint";
     },
@@ -843,7 +844,7 @@ export async function paintBannerArtNow(
       if (!painted && current.art?.state === "ready") return bannerArtView(runId, current);
       const world = await deps.store.readDoc(worldId(runId), normalizeWorld);
       if (!world) throw runNotFound();
-      const connectionId = world.images.connectionId;
+      const connectionId = imageConnectionFor(world.images, "scenes");
       if (!connectionId) throw new OtomeForgeError(503, "This world has no image connection.", "no-connection");
       const at = new Date().toISOString();
       const saved = await updateIfChanged(
