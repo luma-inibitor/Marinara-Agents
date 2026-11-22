@@ -44,6 +44,7 @@ import {
   DEFAULT_IMAGE_RATING,
   IMAGE_RATINGS,
   IMAGE_STYLE_MAX,
+  STICKER_STYLE_MAX,
   contentNeedsAgeGate,
   enforceContent,
   imageRatingNeedsAgeGate,
@@ -173,6 +174,11 @@ const SettingsBody = z.object({
       ask: z.boolean().optional(),
       expressions: z.boolean().optional(),
       styleProfileId: z.string().max(200).optional(),
+      stickerStyle: z
+        .string()
+        .max(STICKER_STYLE_MAX)
+        .transform((style) => style.trim())
+        .optional(),
       style: ImageStyleSchema.optional(),
       sideSprites: z.boolean().optional(),
     })

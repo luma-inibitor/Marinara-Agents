@@ -162,6 +162,8 @@ export function limitsForDarkness(
 export const DEFAULT_IMAGE_RATING: ImageRating = "sfw";
 /** The player's image style (Settings → Images): a short line of art-style words. */
 export const IMAGE_STYLE_MAX = 300;
+/** A run's sticker style (POST /runs/:run/settings): art-style words that replace the default chibi look. */
+export const STICKER_STYLE_MAX = 600;
 export function defaultContent(): ContentSettings {
   return { heat: "sfw", darkness: "angst", limits: defaultLimits("angst"), custom: [] };
 }
