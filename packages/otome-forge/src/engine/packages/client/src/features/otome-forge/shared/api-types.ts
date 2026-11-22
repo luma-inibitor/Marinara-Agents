@@ -238,6 +238,11 @@ export interface World {
   content: ContentSettings;
   images: ImageSettings;
   connections: Connections;
+  /**
+   * The connection that writes a scene again when the narration connection's reply reads as a soft refusal
+   * (S/story/narration-fallback.ts); absent: never.
+   */
+  narrationFallback?: string;
   forge: ForgeStatus;
   audio: WorldAudio;
   /** Keyed by S/art/places.ts placeKey(name), which keeps the letters of any script; clients look places up by name. */
@@ -1249,6 +1254,16 @@ export interface ChoiceOption {
 }
 
 /** The kit's choice shape (player-choices-server.mjs): small choices reconverge; one big choice may end a chapter. */
+/**
+ * The narration fallback fired on this scene (S/story/narration-fallback.ts): why, which connection wrote it first, and
+ * whether the fallback's scene was kept (`written.connectionId` names the one stored).
+ */
+export interface BeatFallback {
+  reason: "declined" | "refusal" | "filtered" | "short-intimate" | "choice-at-end";
+  from: string;
+  used: boolean;
+}
+
 export interface ForgeChoice {
   /** `choice-<n>`, from the choice's place in the model's reply. */
   id: string;
@@ -1307,7 +1322,7 @@ export interface Beat {
   readThrough: number;
   /** The player ended the scene at segment `at` (no model call); `veil` is what they chose to veil from then on. */
   easedOff?: { at: number; veil?: LimitId[] };
-  written: { at: string; connectionId: string; model: string };
+  written: { at: string; connectionId: string; model: string; fallback?: BeatFallback };
   rewrites: number;
   /** Set once the reader was first served it (M2b): a rupture opens no route beat that was never on screen. */
   shown?: true;
